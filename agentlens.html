@@ -29,7 +29,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4ff;color:var(--g900);line-height:1.6}
-.hero{background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 55%,#0ea5e9 100%);color:#fff;padding:44px 40px 42px;text-align:center;position:relative}
+.hero{background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 55%,#0ea5e9 100%);color:#fff;padding:44px 40px 28px;text-align:center;position:relative}
 .hero h1{font-size:2.2rem;font-weight:800;letter-spacing:-1px;margin-bottom:8px}
 .hero h1 span{color:#fbbf24}
 .hero p{font-size:.98rem;opacity:.85;max-width:580px;margin:0 auto}
@@ -37,7 +37,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .lang-btn{padding:6px 14px;font-size:.8rem;font-weight:700;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;transition:.15s}
 .lang-btn.active{background:rgba(255,255,255,.3);color:#fff}
 .container{max-width:980px;margin:0 auto;padding:0 20px}
-.input-section{background:#fff;border-radius:18px;padding:30px 32px;box-shadow:0 4px 24px rgba(0,0,0,.08);margin:-24px auto 28px;max-width:800px;position:relative;z-index:10}
+.input-section{background:#fff;border-radius:18px;padding:30px 32px;box-shadow:0 4px 24px rgba(0,0,0,.08);margin:0 auto 28px;max-width:800px;position:relative;z-index:10}
 .input-label{font-size:.8rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block}
 .input-row{display:flex;gap:10px}
 .repo-input{flex:1;padding:13px 16px;border:2px solid var(--g200);border-radius:10px;font-size:.95rem;outline:none;color:var(--g900);background:var(--g50);transition:.2s}
@@ -483,7 +483,11 @@ footer{text-align:center;padding:28px 20px;color:var(--g400);font-size:.78rem}
 
 </div>
 
-<footer id="footer-text"></footer>
+<footer>
+  <span id="footer-text"></span>
+  <span style="margin:0 10px;opacity:.4">·</span>
+  <a href="https://github.com/hugohvf/agentlens" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;text-decoration:none;opacity:.7;transition:.15s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">⭐ GitHub</a>
+</footer>
 
 <script>
 // ══════════════════════════════════════
