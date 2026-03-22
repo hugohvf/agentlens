@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentLens — AI Context Cost Scanner</title>
+<meta name="description" content="Scan any GitHub repo to detect AI agent config files (AGENTS.md, CLAUDE.md, .cursorrules, copilot-instructions), resolve referenced files, and calculate the real context cost per request across all major LLM providers.">
+<meta name="author" content="AgentLens">
+<meta name="theme-color" content="#1e3a8a">
+<meta property="og:title" content="AgentLens — AI Context Cost Scanner">
+<meta property="og:description" content="Detect AI agent configs in any repo. Calculate real context token costs across Claude, GPT, Gemini. Dedup shared references. Project team-wide spending.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AgentLens — AI Context Cost Scanner">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%231e3a8a'/><stop offset='100%25' stop-color='%230ea5e9'/></linearGradient></defs><circle cx='42' cy='42' r='28' fill='none' stroke='url(%23g)' stroke-width='8'/><line x1='62' y1='62' x2='90' y2='90' stroke='url(%23g)' stroke-width='10' stroke-linecap='round'/><circle cx='42' cy='42' r='12' fill='%232563eb' opacity='.25'/></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --blue:#2563eb;--blue-d:#1e3a8a;--blue-l:#dbeafe;
+  --green:#16a34a;--green-l:#dcfce7;
+  --orange:#ea580c;--orange-l:#fed7aa;
+  --red:#dc2626;--red-l:#fee2e2;
+  --purple:#7c3aed;--purple-l:#ede9fe;
+  --yellow:#d97706;--yellow-l:#fef3c7;
+  --teal:#0d9488;--teal-l:#ccfbf1;
+  --pink:#db2777;--pink-l:#fce7f3;
+  --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;
+  --g400:#9ca3af;--g500:#6b7280;--g700:#374151;--g900:#111827;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4ff;color:var(--g900);line-height:1.6}
+.hero{background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 55%,#0ea5e9 100%);color:#fff;padding:44px 40px 42px;text-align:center;position:relative}
+.hero h1{font-size:2.2rem;font-weight:800;letter-spacing:-1px;margin-bottom:8px}
+.hero h1 span{color:#fbbf24}
+.hero p{font-size:.98rem;opacity:.85;max-width:580px;margin:0 auto}
+.lang-toggle{position:absolute;top:16px;right:20px;display:flex;gap:0;background:rgba(255,255,255,.15);border-radius:8px;overflow:hidden}
+.lang-btn{padding:6px 14px;font-size:.8rem;font-weight:700;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;transition:.15s}
+.lang-btn.active{background:rgba(255,255,255,.3);color:#fff}
+.container{max-width:980px;margin:0 auto;padding:0 20px}
+.input-section{background:#fff;border-radius:18px;padding:30px 32px;box-shadow:0 4px 24px rgba(0,0,0,.08);margin:-24px auto 28px;max-width:800px;position:relative;z-index:10}
+.input-label{font-size:.8rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block}
+.input-row{display:flex;gap:10px}
+.repo-input{flex:1;padding:13px 16px;border:2px solid var(--g200);border-radius:10px;font-size:.95rem;outline:none;color:var(--g900);background:var(--g50);transition:.2s}
+.repo-input:focus{border-color:var(--blue);background:#fff}
+.fetch-btn{padding:13px 24px;background:linear-gradient(135deg,var(--blue-d),var(--blue));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:7px;transition:.2s}
+.fetch-btn:hover{opacity:.9;transform:translateY(-1px)}
+.fetch-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.examples{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.examples span{font-size:.78rem;color:var(--g500);font-weight:600}
+.example-chip{background:var(--blue-l);color:var(--blue);border:1px solid #bfdbfe;border-radius:99px;padding:2px 11px;font-size:.76rem;font-weight:600;cursor:pointer;transition:.15s}
+.example-chip:hover{background:#bfdbfe}
+/* STATUS */
+#status-area{margin-bottom:20px}
+.status-card{background:#fff;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.05);font-weight:600;font-size:.92rem}
+.status-card.loading{border-left:4px solid var(--blue)}
+.status-card.error{border-left:4px solid var(--red)}
+.status-card.warn{border-left:4px solid var(--yellow)}
+.spinner{width:18px;height:18px;border:3px solid var(--blue-l);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* MAIN TABS */
+.main-tabs{display:flex;gap:0;margin-bottom:24px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.main-tab{flex:1;padding:14px;text-align:center;font-weight:700;font-size:.92rem;cursor:pointer;border:none;background:none;color:var(--g500);transition:.2s;border-bottom:3px solid transparent}
+.main-tab.active{color:var(--blue);background:var(--blue-l);border-bottom-color:var(--blue)}
+.main-tab:hover:not(.active){background:var(--g50)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* STATS */
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:18px 16px;box-shadow:0 2px 8px rgba(0,0,0,.04);text-align:center}
+.stat-num{font-size:1.7rem;font-weight:800;line-height:1;margin-bottom:3px}
+.stat-label{font-size:.72rem;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.stat-card.blue .stat-num{color:var(--blue)}.stat-card.green .stat-num{color:var(--green)}.stat-card.purple .stat-num{color:var(--purple)}.stat-card.orange .stat-num{color:var(--orange)}.stat-card.teal .stat-num{color:var(--teal)}.stat-card.pink .stat-num{color:var(--pink)}
+/* TOOL GRID */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:12px;margin-bottom:24px}
+.tool-card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.04);display:flex;align-items:center;gap:10px;border:2px solid transparent;transition:.2s}
+.tool-card.found{border-color:var(--green)}.tool-card.missing{opacity:.38}
+.tool-icon{font-size:1.4rem;flex-shrink:0}
+.tool-info .tool-name{font-weight:700;font-size:.85rem;margin-bottom:1px}
+.tool-info .tool-file{font-family:monospace;font-size:.72rem;color:var(--g500)}
+.found-dot{width:9px;height:9px;border-radius:50%;background:var(--green);margin-left:auto;flex-shrink:0}
+.miss-dot{width:9px;height:9px;border-radius:50%;background:var(--g300);margin-left:auto;flex-shrink:0}
+/* SECTION */
+.section{padding:0 0 28px}
+.section-header{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.section-header h2{font-size:1.1rem;font-weight:800}
+.pill{border-radius:99px;padding:2px 10px;font-size:.72rem;font-weight:700;background:var(--blue-l);color:var(--blue)}
+.pill.green{background:var(--green-l);color:var(--green)}
+.pill.teal{background:var(--teal-l);color:var(--teal)}
+/* CONTEXT TREE */
+.context-tree{background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:24px;font-family:monospace;font-size:.84rem}
+.tree-item{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px dashed var(--g200)}
+.tree-item:last-child{border-bottom:none}
+.t-path{flex:1;color:var(--blue)}.t-path.root{color:var(--g900);font-weight:700}.t-path.dedup{color:var(--g400);text-decoration:line-through}
+.t-right{display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0}
+.t-tok{color:var(--g400);font-size:.73rem}
+.t-tool{font-size:.67rem;padding:1px 7px;border-radius:99px;font-weight:700}
+/* FILE BLOCKS */
+.agent-file-block{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:16px}
+.agent-file-header{background:linear-gradient(135deg,#f8faff,#eff6ff);border-bottom:1px solid var(--g200);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;cursor:pointer;user-select:none}
+.agent-file-header:hover{background:var(--blue-l)}
+.agent-file-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.9rem}
+.file-badge{background:var(--g900);color:#fff;border-radius:5px;padding:2px 9px;font-family:monospace;font-size:.76rem;font-weight:600}
+.agent-file-body{display:none}.agent-file-body.open{display:block}
+.tab-bar{display:flex;border-bottom:1px solid var(--g200);padding:0 20px;background:#fff}
+.tab-btn{padding:10px 14px;border:none;background:none;cursor:pointer;font-size:.84rem;font-weight:600;color:var(--g500);border-bottom:3px solid transparent;margin-bottom:-1px;transition:.15s}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-content{display:none;padding:20px}.tab-content.active{display:block}
+.md-body{line-height:1.75;color:var(--g700)}.md-body h1,.md-body h2,.md-body h3{color:var(--g900);font-weight:800;margin:18px 0 6px}
+.md-body h1{font-size:1.35rem}.md-body h2{font-size:1.1rem}.md-body h3{font-size:.98rem}
+.md-body p{margin-bottom:10px}.md-body ul,.md-body ol{margin:6px 0 10px 18px}.md-body li{margin-bottom:3px}
+.md-body code{background:var(--g100);border-radius:4px;padding:1px 5px;font-family:monospace;font-size:.86em;color:var(--purple)}
+.md-body pre{background:var(--g900);color:#e2e8f0;border-radius:8px;padding:16px;overflow-x:auto;margin:12px 0;font-family:monospace;font-size:.84em;line-height:1.6}
+.md-body pre code{background:none;color:inherit;padding:0}.md-body a{color:var(--blue)}
+.md-body blockquote{border-left:4px solid var(--blue-l);background:var(--g50);padding:10px 14px;margin:10px 0;border-radius:0 6px 6px 0}
+.raw-code{background:var(--g900);color:#e2e8f0;border-radius:8px;padding:18px;overflow-x:auto;font-family:monospace;font-size:.82em;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:420px;overflow-y:auto}
+/* REFS */
+.refs-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
+.ref-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05);border-left:4px solid var(--blue)}
+.ref-card.not-found{border-left-color:var(--g400);opacity:.65}
+.ref-card-header{padding:12px 16px;background:var(--g50);border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;cursor:pointer;user-select:none}
+.ref-card-header:hover{background:var(--blue-l)}
+.ref-path{font-family:monospace;font-size:.84rem;font-weight:700}
+.ref-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ref-tag{border-radius:99px;padding:1px 9px;font-size:.7rem;font-weight:700;text-transform:uppercase}
+.ref-tag.found{background:var(--green-l);color:var(--green)}.ref-tag.missing{background:var(--red-l);color:var(--red)}
+.ref-tag.type{background:var(--purple-l);color:var(--purple)}.ref-tag.shared{background:var(--teal-l);color:var(--teal)}
+.token-badge{background:var(--blue-l);color:var(--blue);border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:700}
+.ref-content{padding:0 16px;max-height:0;overflow:hidden;transition:max-height .3s,padding .3s}
+.ref-content.open{max-height:520px;padding:16px;overflow-y:auto}
+/* COST TAB */
+.cost-section{background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:20px}
+.cost-section h3{font-size:1rem;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:600px){.controls-grid{grid-template-columns:1fr}}
+.control-group label{display:block;font-size:.78rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.control-group select,.control-group input[type=number]{width:100%;padding:10px 12px;border:2px solid var(--g200);border-radius:8px;font-size:.9rem;outline:none;background:var(--g50);transition:.2s}
+.control-group select:focus,.control-group input:focus{border-color:var(--blue);background:#fff}
+.slider-group{margin-bottom:14px}
+.slider-group label{display:flex;justify-content:space-between;font-size:.78rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.slider-group label span.val{color:var(--blue);font-size:.95rem}
+input[type=range]{width:100%;accent-color:var(--blue);height:6px;cursor:pointer}
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.toggle-row label{font-size:.82rem;font-weight:600;color:var(--g700)}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:var(--g300);border-radius:24px;transition:.2s}
+.toggle .slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:var(--blue)}
+.toggle input:checked+.slider:before{transform:translateX(20px)}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--g50);border-radius:10px;padding:16px;text-align:center;border:1px solid var(--g200)}
+.kpi .k-num{font-size:1.5rem;font-weight:800;line-height:1;margin-bottom:2px}
+.kpi .k-label{font-size:.72rem;color:var(--g500);font-weight:600;text-transform:uppercase}
+.kpi.blue .k-num{color:var(--blue)}.kpi.green .k-num{color:var(--green)}.kpi.orange .k-num{color:var(--orange)}.kpi.red .k-num{color:var(--red)}.kpi.purple .k-num{color:var(--purple)}
+.chart-box{position:relative;width:100%;height:300px;margin-bottom:16px}
+.comparison-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:8px}
+.comparison-table th{background:var(--g100);font-weight:700;text-align:left;padding:10px 12px;border-bottom:2px solid var(--g200)}
+.comparison-table td{padding:9px 12px;border-bottom:1px solid var(--g200)}
+.comparison-table tr:hover td{background:var(--blue-l)}
+.comparison-table th.sortable:hover{background:var(--blue-l);color:var(--blue)}
+.comparison-table .num{text-align:right;font-family:monospace;font-weight:600}
+.savings-banner{background:linear-gradient(135deg,var(--teal-l),#d1fae5);border:2px solid var(--teal);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.savings-banner .s-icon{font-size:1.8rem;flex-shrink:0}
+.savings-banner .s-body{flex:1}
+.savings-banner .s-title{font-weight:800;font-size:.92rem;color:var(--teal)}
+.savings-banner .s-detail{font-size:.84rem;color:var(--g700)}
+.savings-banner .s-num{font-size:1.4rem;font-weight:800;color:var(--teal);white-space:nowrap}
+.empty-state{text-align:center;padding:50px 20px;color:var(--g500)}
+.empty-state .icon{font-size:3rem;margin-bottom:12px}
+.empty-state h3{font-size:1rem;font-weight:700;color:var(--g700);margin-bottom:6px}
+.empty-state p{font-size:.88rem;max-width:380px;margin:0 auto}
+footer{text-align:center;padding:28px 20px;color:var(--g400);font-size:.78rem}
+.hidden{display:none!important}
+/* MODE TABS */
+.mode-tabs{display:flex;gap:0;margin-bottom:20px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.mode-tab{flex:1;padding:13px;text-align:center;font-weight:700;font-size:.92rem;cursor:pointer;border:none;background:none;color:var(--g500);transition:.2s;border-bottom:3px solid transparent}
+.mode-tab.active{color:var(--blue);background:var(--blue-l);border-bottom-color:var(--blue)}
+.mode-tab:hover:not(.active){background:var(--g50)}
+/* COMPARE SECTION */
+.compare-card{background:#fff;border-radius:18px;padding:28px 32px;box-shadow:0 4px 24px rgba(0,0,0,.08);margin-bottom:24px}
+.compare-queue{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.compare-repo-chip{display:flex;align-items:center;justify-content:space-between;background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:10px 14px}
+.compare-repo-chip .crep-name{font-family:monospace;font-size:.9rem;font-weight:700;color:var(--g900)}
+.compare-repo-chip .crep-status{font-size:.75rem;color:var(--g500);margin-left:8px}
+.crep-right{display:flex;align-items:center;gap:8px}
+.remove-chip{background:none;border:none;cursor:pointer;color:var(--g400);font-size:1rem;padding:2px 6px;border-radius:6px;transition:.15s;line-height:1}
+.remove-chip:hover{background:var(--red-l);color:var(--red)}
+.compare-run-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--blue-d),var(--blue));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s;margin-top:18px}
+.compare-run-btn:hover:not(:disabled){opacity:.9;transform:translateY(-1px)}
+.compare-run-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.cmp-hint{font-size:.8rem;color:var(--g400);text-align:center;margin-top:10px}
+.compare-result-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.compare-result-table th{background:var(--g100);font-weight:700;text-align:left;padding:10px 12px;border-bottom:2px solid var(--g200)}
+.compare-result-table td{padding:9px 12px;border-bottom:1px solid var(--g200);vertical-align:middle}
+.compare-result-table tr:hover td{background:var(--blue-l)}
+.compare-result-table .num{text-align:right;font-family:monospace;font-weight:600}
+.cmp-progress{font-size:.8rem;color:var(--g500);display:flex;align-items:center;gap:6px}
+.cmp-scanning{color:var(--blue);font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="lang-toggle">
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn active" onclick="setLang('pt')">PT</button>
+  </div>
+  <h1><span>Agent</span>Lens</h1>
+  <p id="hero-sub"></p>
+</div>
+
+<div class="container">
+  <!-- MODE SWITCHER -->
+  <div class="mode-tabs" style="margin-top:20px">
+    <button class="mode-tab active" onclick="setMode('analyze')" id="mode-tab-analyze"></button>
+    <button class="mode-tab" onclick="setMode('compare')" id="mode-tab-compare"></button>
+  </div>
+
+  <!-- ANALYZE SECTION -->
+  <div id="section-analyze">
+  <div class="input-section">
+    <label class="input-label" for="repo-url" id="lbl-repo"></label>
+    <div class="input-row">
+      <input class="repo-input" id="repo-url" type="text" autocomplete="off" spellcheck="false" />
+      <button class="fetch-btn" id="fetch-btn" onclick="analyze()">
+        <span id="btn-icon">🔍</span>
+        <span id="btn-text"></span>
+      </button>
+    </div>
+    <div class="examples">
+      <span>Try:</span>
+      <span class="example-chip" onclick="setExample('https://github.com/anthropics/anthropic-cookbook')">anthropic-cookbook</span>
+      <span class="example-chip" onclick="setExample('https://github.com/openai/codex')">openai/codex</span>
+      <span class="example-chip" onclick="setExample('https://github.com/microsoft/vscode')">microsoft/vscode</span>
+      <span class="example-chip" onclick="setExample('https://github.com/withastro/astro')">withastro/astro</span>
+      <span class="example-chip" onclick="setExample('https://github.com/getsentry/sentry')">getsentry/sentry</span>
+      <span class="example-chip" onclick="setExample('https://github.com/facebook/react')">facebook/react</span>
+      <span class="example-chip" onclick="setExample('https://github.com/grafana/grafana')">grafana/grafana</span>
+    </div>
+  </div>
+
+  <div id="status-area"></div>
+
+  <div id="results" class="hidden">
+    <!-- MAIN TABS -->
+    <div class="main-tabs">
+      <button class="main-tab active" onclick="showPanel('panel-detect',this)" id="tab-detect"></button>
+      <button class="main-tab" onclick="showPanel('panel-cost',this)" id="tab-cost"></button>
+    </div>
+
+    <!-- DETECTION PANEL -->
+    <div class="tab-panel active" id="panel-detect">
+      <div class="stats-bar" id="stats-bar"></div>
+      <div id="savings-banner" class="savings-banner hidden"></div>
+      <!-- CONTEXT HEALTH -->
+      <div class="section" id="health-section"></div>
+
+      <div class="section">
+        <div class="section-header"><h2 id="h-tools"></h2><span class="pill green" id="tools-found-pill"></span></div>
+        <div class="tool-grid" id="tool-grid"></div>
+      </div>
+      <div class="section">
+        <div class="section-header"><h2 id="h-tree"></h2><span class="pill" id="tree-count-pill"></span></div>
+        <div class="context-tree" id="context-tree"></div>
+      </div>
+      <div class="section">
+        <div class="section-header"><h2 id="h-files"></h2><span class="pill" id="agent-files-pill"></span></div>
+        <div id="agent-files-list"></div>
+      </div>
+      <div class="section">
+        <div class="section-header"><h2 id="h-refs"></h2><span class="pill green" id="refs-count-pill"></span></div>
+        <div class="refs-grid" id="refs-grid"></div>
+      </div>
+    </div>
+
+    <!-- COST PANEL -->
+    <div class="tab-panel" id="panel-cost">
+
+      <!-- Controls -->
+      <div class="cost-section">
+        <h3 id="h-cost-controls"></h3>
+        <div class="controls-grid">
+          <div class="control-group">
+            <label id="lbl-model"></label>
+            <select id="sel-model" onchange="recalcCost()">
+              <optgroup label="Anthropic">
+                <option value="claude-opus-4.6">Claude Opus 4.6</option>
+                <option value="claude-sonnet-4.6" selected>Claude Sonnet 4.6</option>
+                <option value="claude-sonnet-4.5">Claude Sonnet 4.5</option>
+                <option value="claude-haiku-4.5">Claude Haiku 4.5</option>
+              </optgroup>
+              <optgroup label="OpenAI">
+                <option value="gpt-5.4">GPT-5.4</option>
+                <option value="gpt-5.3-codex">GPT-5.3 Codex</option>
+              </optgroup>
+              <optgroup label="Cursor">
+                <option value="cursor-composer-2">Composer 2</option>
+                <option value="cursor-composer-2-fast">Composer 2 Fast</option>
+                <option value="cursor-composer-1.5">Composer 1.5</option>
+                <option value="cursor-auto">Cursor Auto</option>
+              </optgroup>
+              <optgroup label="Google">
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              </optgroup>
+              <optgroup label="DeepSeek">
+                <option value="deepseek-v3">DeepSeek V3</option>
+                <option value="deepseek-r1">DeepSeek R1</option>
+              </optgroup>
+              <optgroup label="Moonshot">
+                <option value="kimi-k2">Kimi K2</option>
+              </optgroup>
+              <optgroup label="Alibaba">
+                <option value="qwen3-max">Qwen3 Max</option>
+                <option value="qwen3.5-plus">Qwen3.5 Plus</option>
+              </optgroup>
+              <optgroup label="xAI">
+                <option value="grok-3">Grok 3</option>
+              </optgroup>
+              <optgroup label="Mistral">
+                <option value="mistral-large">Mistral Large</option>
+                <option value="mistral-medium-3">Mistral Medium 3</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="control-group">
+            <label id="lbl-output"></label>
+            <select id="sel-output" onchange="recalcCost()">
+              <option value="2000">2k tokens (~short answer)</option>
+              <option value="4000" selected>4k tokens (~medium)</option>
+              <option value="8000">8k tokens (~code gen)</option>
+              <option value="16000">16k tokens (~long gen)</option>
+            </select>
+          </div>
+        </div>
+        <div class="slider-group">
+          <label id="lbl-devs"><span class="val" id="val-devs">5</span></label>
+          <input type="range" id="sl-devs" min="1" max="100" value="5" oninput="recalcCost()">
+        </div>
+        <div class="slider-group">
+          <label id="lbl-chats"><span class="val" id="val-chats">15</span></label>
+          <input type="range" id="sl-chats" min="1" max="100" value="15" oninput="recalcCost()">
+        </div>
+        <div class="slider-group">
+          <label id="lbl-cache"><span class="val" id="val-cache">70%</span></label>
+          <input type="range" id="sl-cache" min="0" max="100" value="70" oninput="recalcCost()">
+        </div>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="chk-brl" onchange="recalcCost()" checked><span class="slider"></span></label>
+          <label for="chk-brl" id="lbl-brl"></label>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpi-row"></div>
+
+      <!-- Charts -->
+      <div class="cost-section">
+        <h3 id="h-breakdown"></h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="chart-box" style="height:260px"><canvas id="chart-breakdown"></canvas></div>
+          <div class="chart-box" style="height:260px"><canvas id="chart-perdev"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Comparison Table -->
+      <div class="cost-section">
+        <h3 id="h-comparison"></h3>
+        <div style="overflow-x:auto">
+          <table class="comparison-table" id="comparison-table"></table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="empty-state" class="empty-state">
+    <div class="icon">🗂️</div>
+    <h3 id="empty-h"></h3>
+    <p id="empty-p"></p>
+  </div>
+  </div><!-- end #section-analyze -->
+
+  <!-- COMPARE SECTION -->
+  <div id="section-compare" class="hidden">
+    <!-- Input card -->
+    <div class="compare-card">
+      <label class="input-label" id="lbl-cmp-add"></label>
+      <div class="input-row">
+        <input class="repo-input" id="cmp-url" type="text" autocomplete="off" spellcheck="false" />
+        <button class="fetch-btn" onclick="addToCompare()">
+          <span>＋</span>
+          <span id="btn-cmp-add"></span>
+        </button>
+      </div>
+      <div class="compare-queue" id="cmp-queue"></div>
+      <p class="cmp-hint" id="cmp-hint"></p>
+      <button class="compare-run-btn" id="cmp-run-btn" onclick="runCompare()" disabled>
+        <span id="cmp-run-icon">⚖️</span>
+        <span id="cmp-run-text"></span>
+      </button>
+    </div>
+
+    <!-- Compare status -->
+    <div id="cmp-status-area"></div>
+
+    <!-- Compare results -->
+    <div id="cmp-results" class="hidden">
+      <!-- Context bar chart -->
+      <div class="cost-section">
+        <h3 id="h-cmp-chart"></h3>
+        <div class="chart-box" style="height:300px"><canvas id="chart-compare"></canvas></div>
+      </div>
+      <!-- Comparison table -->
+      <div class="cost-section">
+        <h3 id="h-cmp-table"></h3>
+        <!-- Mini settings row for compare -->
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--g50);border-radius:10px">
+          <label style="font-size:.75rem;font-weight:700;color:var(--g500);text-transform:uppercase" id="lbl-cmp-model"></label>
+          <select id="cmp-sel-model" onchange="renderCompareResults()" style="padding:6px 10px;border:2px solid var(--g200);border-radius:8px;font-size:.88rem;background:#fff;outline:none">
+            <optgroup label="Anthropic">
+              <option value="claude-opus-4.6">Claude Opus 4.6</option>
+              <option value="claude-sonnet-4.6" selected>Claude Sonnet 4.6</option>
+              <option value="claude-sonnet-4.5">Claude Sonnet 4.5</option>
+              <option value="claude-haiku-4.5">Claude Haiku 4.5</option>
+            </optgroup>
+            <optgroup label="OpenAI">
+              <option value="gpt-5.4">GPT-5.4</option>
+              <option value="gpt-5.3-codex">GPT-5.3 Codex</option>
+            </optgroup>
+            <optgroup label="Cursor">
+              <option value="cursor-composer-2">Composer 2</option>
+              <option value="cursor-composer-2-fast">Composer 2 Fast</option>
+              <option value="cursor-auto">Cursor Auto</option>
+            </optgroup>
+            <optgroup label="Google">
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+            </optgroup>
+            <optgroup label="DeepSeek">
+              <option value="deepseek-v3">DeepSeek V3</option>
+              <option value="deepseek-r1">DeepSeek R1</option>
+            </optgroup>
+            <optgroup label="Moonshot"><option value="kimi-k2">Kimi K2</option></optgroup>
+            <optgroup label="Alibaba">
+              <option value="qwen3-max">Qwen3 Max</option>
+              <option value="qwen3.5-plus">Qwen3.5 Plus</option>
+            </optgroup>
+            <optgroup label="xAI"><option value="grok-3">Grok 3</option></optgroup>
+            <optgroup label="Mistral">
+              <option value="mistral-large">Mistral Large 3</option>
+              <option value="mistral-medium-3">Mistral Medium 3</option>
+            </optgroup>
+          </select>
+          <label style="font-size:.75rem;font-weight:700;color:var(--g500);text-transform:uppercase" id="lbl-cmp-devs"></label>
+          <input type="range" id="cmp-sl-devs" min="1" max="100" value="5" oninput="renderCompareResults()" style="width:120px;accent-color:var(--blue)">
+          <span id="cmp-val-devs" style="font-size:.9rem;font-weight:700;color:var(--blue);min-width:24px">5</span>
+          <label style="font-size:.75rem;font-weight:700;color:var(--g500);text-transform:uppercase" id="lbl-cmp-chats"></label>
+          <input type="range" id="cmp-sl-chats" min="1" max="100" value="15" oninput="renderCompareResults()" style="width:120px;accent-color:var(--blue)">
+          <span id="cmp-val-chats" style="font-size:.9rem;font-weight:700;color:var(--blue);min-width:24px">15</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="compare-result-table" id="cmp-result-table"></table>
+        </div>
+      </div>
+    </div>
+  </div><!-- end #section-compare -->
+
+</div>
+
+<footer id="footer-text"></footer>
+
+<script>
+// ══════════════════════════════════════
+// I18N
+// ══════════════════════════════════════
+const I18N = {
+  en: {
+    heroSub: 'Paste any GitHub repo to detect AI agent configs, resolve every referenced file, and calculate the real cost of context loaded per request.',
+    lblRepo: 'GitHub Repository URL',
+    btnAnalyze: 'Analyze',
+    tabDetect: '🔍 Agent Detection',
+    tabCost: '💰 Cost Analysis',
+    hTools: '🛠️ Agent Tools Detected',
+    hTree: '📂 Unified Context Load Order',
+    hFiles: '📄 Agent Config Files',
+    hRefs: '🔗 Referenced Files',
+    hCostControls: '⚙️ Configuration',
+    hBreakdown: '📊 Cost Breakdown',
+    hComparison: '📋 Model Comparison — click to sort',
+    hHealth: '🩺 Context Health',
+    healthLean: 'Lean',
+    healthModerate: 'Moderate',
+    healthHeavy: 'Heavy',
+    healthBloated: 'Bloated',
+    healthIdeal: 'Ideal',
+    healthYours: 'This repo',
+    healthBaseline: 'Recommended baseline',
+    healthCodexWarn: 'Codex truncates at 32 KiB (~6k tokens) silently',
+    healthCopilotWarn: 'Copilot deprioritizes instructions above ~3k tokens',
+    healthClaudeWarn: 'Anthropic recommends keeping CLAUDE.md "short and human-readable"',
+    healthPerFile: 'Per-file health',
+    healthTotal: 'Total context health',
+    lblModel: 'Model / Provider',
+    lblOutput: 'Avg. Output per Chat',
+    lblDevs: 'Developers',
+    lblChats: 'Chats per Dev / Day',
+    lblCache: 'Cache Hit Rate',
+    lblBrl: 'Show BRL (R$)',
+    kpiReq: '/request',
+    kpiDay: '/day',
+    kpiMonth: '/month',
+    kpiYear: '/year',
+    kpiContext: 'context/req',
+    projLabel: 'Cumulative',
+    brkInput: 'Input',
+    brkOutput: 'Output',
+    brkCache: 'Cache',
+    perDevTitle: 'Monthly Cost by Team Size',
+    thModel: 'Model',
+    thReq: '$/request',
+    thDay: '$/day',
+    thMonth: '$/month',
+    thYear: '$/year',
+    emptyH: 'No repository analyzed yet',
+    emptyP: 'Enter a GitHub URL and click Analyze to scan for all AI agent config files and calculate context costs.',
+    footer: 'AgentLens · Scans AGENTS.md · CLAUDE.md · .cursorrules · .windsurfrules · copilot-instructions.md',
+    found: 'found',
+    missing: 'not found',
+    shared: 'shared',
+    already: 'already counted',
+    tokens: 'tokens',
+    noRefs: 'No file references detected',
+    noRefsP: 'The agent config files don\'t reference any local files via links, @imports, or known patterns.',
+    dedupTitle: 'Deduplication active',
+    dedupDetail: (n,raw,dedup) => `${n} shared file(s). Without dedup: ~${raw}. Real context: ~${dedup}.`,
+    scanning: 'Scanning agent config files on branch',
+    parsing: 'Parsing references',
+    fetching: 'Fetching referenced files',
+    noFiles: 'No AI agent config files found in this repository.',
+    errPrivate: 'Repository not accessible. It may be private, or the URL may be wrong.',
+    errPrivateDetail: 'GitHub raw content API returned 404 for all branches. Verify the repo exists and is public.',
+    errNetwork: 'Network error — unable to reach GitHub. Check your connection and try again.',
+    rendered: '✨ Rendered',
+    raw: '📝 Raw',
+    tools: 'tools',
+    refs: 'refs',
+    resolved: 'resolved',
+    files: 'files',
+    placeholder: 'https://github.com/owner/repository',
+    tabAnalyze: '🔍 Analyze Repo',
+    tabCompare: '⚖️ Compare Repos',
+    cmpAddLabel: 'Add Repository to Compare',
+    cmpAddBtn: 'Add',
+    cmpRun: 'Compare All',
+    cmpHint: 'Add 2–6 repositories, then click Compare All',
+    cmpChartTitle: '📊 Context Size Comparison',
+    cmpTableTitle: '📋 Side-by-Side Cost Comparison',
+    cmpModel: 'Model',
+    cmpDevs: 'Devs',
+    cmpChats: 'Chats/day',
+    cmpColRepo: 'Repository',
+    cmpColTools: 'Tools',
+    cmpColTokens: 'Tokens',
+    cmpNoConfigs: 'no agent configs',
+    cmpScanning: 'Scanning',
+  },
+  pt: {
+    heroSub: 'Cole a URL de qualquer repositório GitHub para detectar configs de agentes IA, resolver cada arquivo referenciado e calcular o custo real do contexto carregado por requisição.',
+    lblRepo: 'URL do Repositório GitHub',
+    btnAnalyze: 'Analisar',
+    tabDetect: '🔍 Detecção de Agentes',
+    tabCost: '💰 Análise de Custo',
+    hTools: '🛠️ Ferramentas Detectadas',
+    hTree: '📂 Ordem de Carregamento do Contexto',
+    hFiles: '📄 Arquivos de Configuração',
+    hRefs: '🔗 Arquivos Referenciados',
+    hCostControls: '⚙️ Configuração',
+    hBreakdown: '📊 Composição do Custo',
+    hComparison: '📋 Comparação — clique para ordenar',
+    hHealth: '🩺 Saúde do Contexto',
+    healthLean: 'Enxuto',
+    healthModerate: 'Moderado',
+    healthHeavy: 'Pesado',
+    healthBloated: 'Inchado',
+    healthIdeal: 'Ideal',
+    healthYours: 'Este repo',
+    healthBaseline: 'Baseline recomendado',
+    healthCodexWarn: 'Codex trunca silenciosamente em 32 KiB (~6k tokens)',
+    healthCopilotWarn: 'Copilot deprioritiza instruções acima de ~3k tokens',
+    healthClaudeWarn: 'Anthropic recomenda CLAUDE.md "curto e legível por humanos"',
+    healthPerFile: 'Saúde por arquivo',
+    healthTotal: 'Saúde total do contexto',
+    lblModel: 'Modelo / Provedor',
+    lblOutput: 'Output Médio por Chat',
+    lblDevs: 'Desenvolvedores',
+    lblChats: 'Chats por Dev / Dia',
+    lblCache: 'Taxa de Cache Hit',
+    lblBrl: 'Mostrar BRL (R$)',
+    kpiReq: '/requisição',
+    kpiDay: '/dia',
+    kpiMonth: '/mês',
+    kpiYear: '/ano',
+    kpiContext: 'contexto/req',
+    projLabel: 'Acumulado',
+    brkInput: 'Input',
+    brkOutput: 'Output',
+    brkCache: 'Cache',
+    perDevTitle: 'Custo Mensal por Tamanho do Time',
+    thModel: 'Modelo',
+    thReq: '$/req',
+    thDay: '$/dia',
+    thMonth: '$/mês',
+    thYear: '$/ano',
+    emptyH: 'Nenhum repositório analisado',
+    emptyP: 'Digite a URL de um repositório e clique em Analisar para detectar todos os arquivos de config de agentes e calcular os custos.',
+    footer: 'AgentLens · Escaneia AGENTS.md · CLAUDE.md · .cursorrules · .windsurfrules · copilot-instructions.md',
+    found: 'encontrado',
+    missing: 'não encontrado',
+    shared: 'compartilhado',
+    already: 'já contado',
+    tokens: 'tokens',
+    noRefs: 'Nenhuma referência detectada',
+    noRefsP: 'Os arquivos de config não referenciam nenhum arquivo local via links, @imports ou padrões conhecidos.',
+    dedupTitle: 'Deduplicação ativa',
+    dedupDetail: (n,raw,dedup) => `${n} arquivo(s) compartilhado(s). Sem dedup: ~${raw}. Contexto real: ~${dedup}.`,
+    scanning: 'Escaneando configs na branch',
+    parsing: 'Parseando referências',
+    fetching: 'Buscando arquivos referenciados',
+    noFiles: 'Nenhum arquivo de config de agente IA encontrado neste repositório.',
+    errPrivate: 'Repositório não acessível. Pode ser privado ou a URL está incorreta.',
+    errPrivateDetail: 'A API do GitHub retornou 404 para todas as branches. Verifique se o repositório existe e é público.',
+    errNetwork: 'Erro de rede — não foi possível acessar o GitHub. Verifique sua conexão.',
+    rendered: '✨ Renderizado',
+    raw: '📝 Bruto',
+    tools: 'ferramentas',
+    refs: 'refs',
+    resolved: 'resolvidos',
+    files: 'arquivos',
+    placeholder: 'https://github.com/dono/repositorio',
+    tabAnalyze: '🔍 Analisar Repo',
+    tabCompare: '⚖️ Comparar Repos',
+    cmpAddLabel: 'Adicionar Repositório',
+    cmpAddBtn: 'Adicionar',
+    cmpRun: 'Comparar Todos',
+    cmpHint: 'Adicione 2–6 repositórios e clique em Comparar Todos',
+    cmpChartTitle: '📊 Comparativo de Contexto',
+    cmpTableTitle: '📋 Comparação de Custo',
+    cmpModel: 'Modelo',
+    cmpDevs: 'Devs',
+    cmpChats: 'Chats/dia',
+    cmpColRepo: 'Repositório',
+    cmpColTools: 'Ferramentas',
+    cmpColTokens: 'Tokens',
+    cmpNoConfigs: 'sem agent configs',
+    cmpScanning: 'Escaneando',
+  }
+};
+let LANG = 'pt';
+function T(k) { return I18N[LANG][k] || I18N.en[k] || k; }
+
+function setLang(l) {
+  LANG = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === l.toUpperCase()));
+  applyI18N();
+  if (STATE.analyzed) recalcCost();
+}
+function applyI18N() {
+  document.getElementById('hero-sub').textContent = T('heroSub');
+  document.getElementById('lbl-repo').textContent = T('lblRepo');
+  document.getElementById('btn-text').textContent = T('btnAnalyze');
+  document.getElementById('repo-url').placeholder = T('placeholder');
+  document.getElementById('tab-detect').textContent = T('tabDetect');
+  document.getElementById('tab-cost').textContent = T('tabCost');
+  document.getElementById('mode-tab-analyze').textContent = T('tabAnalyze');
+  document.getElementById('mode-tab-compare').textContent = T('tabCompare');
+  document.getElementById('lbl-cmp-add').textContent = T('cmpAddLabel');
+  document.getElementById('btn-cmp-add').textContent = T('cmpAddBtn');
+  document.getElementById('cmp-run-text').textContent = T('cmpRun');
+  document.getElementById('cmp-hint').textContent = T('cmpHint');
+  document.getElementById('h-cmp-chart').textContent = T('cmpChartTitle');
+  document.getElementById('h-cmp-table').textContent = T('cmpTableTitle');
+  document.getElementById('lbl-cmp-model').textContent = T('cmpModel');
+  document.getElementById('lbl-cmp-devs').textContent = T('cmpDevs');
+  document.getElementById('lbl-cmp-chats').textContent = T('cmpChats');
+  document.getElementById('cmp-url').placeholder = T('placeholder');
+  document.getElementById('h-tools').textContent = T('hTools');
+  document.getElementById('h-tree').textContent = T('hTree');
+  document.getElementById('h-files').textContent = T('hFiles');
+  document.getElementById('h-refs').textContent = T('hRefs');
+  document.getElementById('h-cost-controls').textContent = T('hCostControls');
+  document.getElementById('h-breakdown').textContent = T('hBreakdown');
+  document.getElementById('h-comparison').textContent = T('hComparison');
+  document.getElementById('lbl-model').textContent = T('lblModel');
+  document.getElementById('lbl-output').textContent = T('lblOutput');
+  document.getElementById('lbl-brl').textContent = T('lblBrl');
+  document.getElementById('empty-h').textContent = T('emptyH');
+  document.getElementById('empty-p').textContent = T('emptyP');
+  document.getElementById('footer-text').textContent = T('footer');
+  updateSliderLabels();
+}
+
+function updateSliderLabels() {
+  const d = document.getElementById('sl-devs').value;
+  const c = document.getElementById('sl-chats').value;
+  const ca = document.getElementById('sl-cache').value;
+  document.getElementById('lbl-devs').innerHTML = `${T('lblDevs')} <span class="val">${d}</span>`;
+  document.getElementById('lbl-chats').innerHTML = `${T('lblChats')} <span class="val">${c}</span>`;
+  document.getElementById('lbl-cache').innerHTML = `${T('lblCache')} <span class="val">${ca}%</span>`;
+}
+
+// ══════════════════════════════════════
+// PRICING DATA (per 1M tokens, USD)
+// ══════════════════════════════════════
+const PRICING = {
+  // ── Anthropic ──
+  'claude-opus-4.6':  { name:'Claude Opus 4.6',   provider:'Anthropic', input:5.00,  output:25.00, cacheRead:0.50,   cacheWrite:6.25   },
+  'claude-sonnet-4.6':{ name:'Claude Sonnet 4.6',  provider:'Anthropic', input:3.00,  output:15.00, cacheRead:0.30,   cacheWrite:3.75   },
+  'claude-sonnet-4.5':{ name:'Claude Sonnet 4.5',  provider:'Anthropic', input:3.00,  output:15.00, cacheRead:0.30,   cacheWrite:3.75   },
+  'claude-haiku-4.5': { name:'Claude Haiku 4.5',   provider:'Anthropic', input:1.00,  output:5.00,  cacheRead:0.10,   cacheWrite:1.25   },
+  // ── OpenAI ──
+  'gpt-5.4':          { name:'GPT-5.4',            provider:'OpenAI',    input:2.50,  output:15.00, cacheRead:0.25,   cacheWrite:null   },
+  'gpt-5.3-codex':    { name:'GPT-5.3 Codex',      provider:'OpenAI',    input:1.75,  output:14.00, cacheRead:0.175,  cacheWrite:null   },
+  // ── Cursor ──
+  'cursor-composer-2':     { name:'Composer 2',      provider:'Cursor',    input:0.50,  output:2.50,  cacheRead:0.20,   cacheWrite:null   },
+  'cursor-composer-2-fast':{ name:'Composer 2 Fast',  provider:'Cursor',    input:1.50,  output:7.50,  cacheRead:0.35,   cacheWrite:null   },
+  'cursor-composer-1.5':   { name:'Composer 1.5',     provider:'Cursor',    input:3.50,  output:17.50, cacheRead:0.35,   cacheWrite:3.50   },
+  'cursor-auto':           { name:'Cursor Auto',      provider:'Cursor',    input:1.25,  output:6.00,  cacheRead:0.25,   cacheWrite:null   },
+  // ── Google ──
+  'gemini-2.5-pro':   { name:'Gemini 2.5 Pro',     provider:'Google',    input:1.25,  output:10.00, cacheRead:0.125,  cacheWrite:null   },
+  'gemini-2.5-flash': { name:'Gemini 2.5 Flash',    provider:'Google',    input:0.30,  output:2.50,  cacheRead:0.03,   cacheWrite:null   },
+  // ── DeepSeek ──
+  'deepseek-v3':      { name:'DeepSeek V3',         provider:'DeepSeek',  input:0.14,  output:0.28,  cacheRead:0.014,  cacheWrite:null   },
+  'deepseek-r1':      { name:'DeepSeek R1',          provider:'DeepSeek',  input:0.55,  output:2.19,  cacheRead:0.055,  cacheWrite:null   },
+  // ── Moonshot ──
+  'kimi-k2':          { name:'Kimi K2',              provider:'Moonshot',  input:0.60,  output:2.50,  cacheRead:0.15,   cacheWrite:null   },
+  // ── Alibaba ──
+  'qwen3-max':        { name:'Qwen3 Max',            provider:'Alibaba',   input:0.78,  output:3.90,  cacheRead:0.078,  cacheWrite:null   },
+  'qwen3.5-plus':     { name:'Qwen3.5 Plus',         provider:'Alibaba',   input:0.26,  output:1.56,  cacheRead:0.026,  cacheWrite:null   },
+  // ── xAI ──
+  'grok-3':           { name:'Grok 3',               provider:'xAI',       input:3.00,  output:15.00, cacheRead:0.30,   cacheWrite:null   },
+  // ── Mistral ──
+  'mistral-large':    { name:'Mistral Large 3',        provider:'Mistral',   input:0.50,  output:1.50,  cacheRead:null,   cacheWrite:null   },
+  'mistral-medium-3': { name:'Mistral Medium 3',      provider:'Mistral',   input:0.40,  output:2.00,  cacheRead:0.04,   cacheWrite:null   },
+};
+
+const BRL_RATE = 5.70;
+
+// ══════════════════════════════════════
+// AGENT TOOLS REGISTRY
+// ══════════════════════════════════════
+const AGENT_TOOLS = [
+  { id:'codex',   name:'OpenAI Codex',    icon:'⚡', color:'#10a37f', files:['AGENTS.md','agents.md'] },
+  { id:'claude',  name:'Claude Code',     icon:'🔮', color:'#d97706', files:['CLAUDE.md','CLAUDE.local.md','claude.md'] },
+  { id:'cursor',  name:'Cursor',          icon:'🖱️', color:'#2563eb', files:['.cursorrules','.cursor/rules','.cursor/rules/main.mdc','.cursor/rules/default.mdc'] },
+  { id:'copilot', name:'GitHub Copilot',  icon:'🐙', color:'#6d28d9', files:['.github/copilot-instructions.md'] },
+  { id:'windsurf',name:'Windsurf',        icon:'🏄', color:'#0d9488', files:['.windsurfrules'] },
+  { id:'aider',   name:'Aider',           icon:'🤝', color:'#db2777', files:['CONVENTIONS.md','.aider.conf.yml'] },
+  { id:'devin',   name:'Devin',           icon:'🤖', color:'#7c3aed', files:['.devin/instructions.md','DEVIN.md'] },
+];
+
+const TOOL_COLORS = {};
+AGENT_TOOLS.forEach(t => TOOL_COLORS[t.id] = t.color);
+function toolPill(tid) { const c = TOOL_COLORS[tid]||'#6b7280'; return `style="background:${c}22;color:${c};border-radius:99px;padding:1px 7px;font-size:.67rem;font-weight:700;"`; }
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+const STATE = { analyzed:false, totalContextTokens:0, foundByTool:{}, uniqueRefs:[] };
+let chartBreakdown=null, chartPerDev=null;
+let sortCol=4, sortDir=-1; // default: sort by $/year desc
+
+// ══════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════
+function estimateTokens(t){return Math.round(t.length/4)}
+function fmtTok(n){return n>=1000?(n/1000).toFixed(1)+'k':String(n)}
+function fmtUSD(n){return n<0.01?'<$0.01':n<1?'$'+n.toFixed(3):n<1000?'$'+n.toFixed(2):'$'+Math.round(n).toLocaleString()}
+function fmtBRL(n){const v=n*BRL_RATE;return v<0.01?'<R$0,01':v<1?'R$'+v.toFixed(3).replace('.',','):v<1000?'R$'+v.toFixed(2).replace('.',','):'R$'+Math.round(v).toLocaleString('pt-BR')}
+function fmt(n){return document.getElementById('chk-brl').checked?fmtBRL(n):fmtUSD(n)}
+function setExample(u){document.getElementById('repo-url').value=u;document.getElementById('repo-url').focus()}
+function parseRepoUrl(u){u=u.trim().replace(/\/$/,'');const m=u.match(/github\.com\/([^/]+)\/([^/]+)/);return m?{owner:m[1],repo:m[2].replace(/\.git$/,'')}:null}
+function rawUrl(o,r,b,p){return`https://raw.githubusercontent.com/${o}/${r}/${b}/${p}`}
+
+// Reference parser
+function parseReferences(content){
+  const found=new Map();
+  for(const line of content.split('\n')){
+    const t=line.trim();
+    let m=t.match(/^@import\s+["']?([^\s"']+)["']?/);
+    if(m){addR(found,m[1],'import');continue}
+    m=t.match(/^[!]?include[:\s]+["']?([^\s"']+\.[a-zA-Z0-9]+)["']?/i);
+    if(m){addR(found,m[1],'include');continue}
+    m=t.match(/^@(?:file\s+)?([^\s@#]+\.[a-zA-Z0-9]+)/);
+    if(m&&!m[1].startsWith('http')){addR(found,m[1],'ref');continue}
+    const lr=/\[([^\]]*)\]\(([^)]+)\)/g;let lm;
+    while((lm=lr.exec(line))!==null){const h=lm[2].split('#')[0].trim();if(h&&!h.startsWith('http')&&!h.startsWith('mailto')&&h.includes('.'))addR(found,h,'link')}
+    m=t.match(/^context[_-]?files?:\s*\[([^\]]+)\]/i);
+    if(m){m[1].split(',').forEach(f=>{const p=f.trim().replace(/["']/g,'');if(p)addR(found,p,'context')});continue}
+    const cr=/`([^`]+\.[a-zA-Z0-9]+)`/g;let cm;
+    while((cm=cr.exec(line))!==null){const p=cm[1];if(!p.startsWith('http')&&p.includes('/')&&p.split('/').length>=2&&p.length<120)addR(found,p,'inline-code')}
+  }
+  return Array.from(found.values());
+}
+function addR(map,raw,type){const p=raw.replace(/^\.\//,'').replace(/^\//,'');if(!p||p.startsWith('http')||p.length>200)return;if(!map.has(p))map.set(p,{path:p,type})}
+
+// Markdown renderer
+function renderMd(md){let h=md.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/```(\w*)\n?([\s\S]*?)```/g,(_,l,c)=>`<pre><code>${c.trim()}</code></pre>`).replace(/^#{4}\s(.+)$/gm,'<h4>$1</h4>').replace(/^#{3}\s(.+)$/gm,'<h3>$1</h3>').replace(/^#{2}\s(.+)$/gm,'<h2>$1</h2>').replace(/^#{1}\s(.+)$/gm,'<h1>$1</h1>').replace(/^---+$/gm,'<hr>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>').replace(/^&gt;\s(.+)$/gm,'<blockquote>$1</blockquote>').replace(/^[-*+]\s(.+)$/gm,'<li>$1</li>').replace(/(<li>.*<\/li>\n?)+/gs,m=>`<ul>${m}</ul>`).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');return`<p>${h}</p>`}
+
+// UI helpers
+function showStatus(m,t='loading'){const i={loading:'<div class="spinner"></div>',error:'❌',warn:'⚠️'}[t]||'';document.getElementById('status-area').innerHTML=`<div class="status-card ${t}">${i}<span>${m}</span></div>`}
+function clearStatus(){document.getElementById('status-area').innerHTML=''}
+function showPanel(id,btn){document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById(id).classList.add('active');if(id==='panel-cost')recalcCost()}
+function switchTab(btn,tabId,blockId){const bl=document.getElementById(blockId);bl.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));bl.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));btn.classList.add('active');bl.querySelector('#'+tabId).classList.add('active')}
+function toggleRef(el){el.nextElementSibling.classList.toggle('open')}
+function toggleAgentFile(el){el.nextElementSibling.classList.toggle('open')}
+
+// ══════════════════════════════════════
+// CORE REPO ANALYZER (reusable, no DOM)
+// ══════════════════════════════════════
+async function analyzeRepoData(owner,repo){
+  const branches=['main','master','develop','trunk'];
+  let usedBranch=null;
+  for(const b of branches){
+    try{
+      const r=await fetch(rawUrl(owner,repo,b,'README.md'),{method:'HEAD'});
+      if(r.ok){usedBranch=b;break}
+      if(r.status===403)return{ok:false,error:'private'}
+    }catch(e){}
+  }
+  if(!usedBranch){
+    for(const b of branches){
+      try{
+        for(const f of ['AGENTS.md','CLAUDE.md','LICENSE']){
+          const r=await fetch(rawUrl(owner,repo,b,f),{method:'HEAD'});
+          if(r.ok){usedBranch=b;break}
+        }
+        if(usedBranch)break
+      }catch(e){return{ok:false,error:'network'}}
+    }
+  }
+  if(!usedBranch)return{ok:false,error:'notfound'}
+
+  const fetchF=async p=>{try{const r=await fetch(rawUrl(owner,repo,usedBranch,p));if(r.ok)return{path:p,content:await r.text(),found:true}}catch(e){}return{path:p,content:null,found:false}};
+
+  const all=[];AGENT_TOOLS.forEach(t=>t.files.forEach(f=>all.push({toolId:t.id,filePath:f})));
+  const res=await Promise.all(all.map(async({toolId,filePath})=>{const r=await fetchF(filePath);return{toolId,...r}}));
+
+  const foundByTool={};
+  for(const r of res)if(r.found&&!foundByTool[r.toolId])foundByTool[r.toolId]={path:r.path,content:r.content};
+
+  const foundTools=AGENT_TOOLS.filter(t=>foundByTool[t.id]);
+  if(!foundTools.length)return{ok:true,branch:usedBranch,foundByTool:{},uniqueRefs:[],agentTok:0,refTok:0,totalContextTokens:0,noFiles:true};
+
+  const refPool=new Map();
+  for(const tool of foundTools){
+    const refs=parseReferences(foundByTool[tool.id].content);
+    for(const ref of refs){
+      if(!refPool.has(ref.path))refPool.set(ref.path,{path:ref.path,type:ref.type,fromTools:new Set([tool.id]),found:false,content:null,tokens:0});
+      else refPool.get(ref.path).fromTools.add(tool.id)
+    }
+  }
+  const uniqueRefs=Array.from(refPool.values());
+  await Promise.all(uniqueRefs.map(async ref=>{try{const r=await fetch(rawUrl(owner,repo,usedBranch,ref.path));if(r.ok){ref.content=await r.text();ref.found=true;ref.tokens=estimateTokens(ref.content)}}catch(e){}}));
+
+  const agentTok=foundTools.reduce((s,t)=>s+estimateTokens(foundByTool[t.id].content),0);
+  const refTok=uniqueRefs.filter(r=>r.found).reduce((s,r)=>s+r.tokens,0);
+  return{ok:true,branch:usedBranch,foundByTool,uniqueRefs,agentTok,refTok,totalContextTokens:agentTok+refTok}
+}
+
+// ══════════════════════════════════════
+// MAIN ANALYZE (single repo + UI)
+// ══════════════════════════════════════
+async function analyze(){
+  const url=document.getElementById('repo-url').value.trim();
+  if(!url){showStatus('⚠️ Enter a GitHub URL.','warn');return}
+  const parsed=parseRepoUrl(url);
+  if(!parsed){showStatus('❌ Invalid URL. Use: https://github.com/owner/repo','error');return}
+  const{owner,repo}=parsed;
+  const btn=document.getElementById('fetch-btn');
+  btn.disabled=true;document.getElementById('btn-icon').textContent='⏳';document.getElementById('btn-text').textContent='…';
+  document.getElementById('results').classList.add('hidden');document.getElementById('empty-state').classList.add('hidden');
+  showStatus(`${T('scanning')} …`,'loading');
+
+  const data=await analyzeRepoData(owner,repo);
+
+  const resetBtn=()=>{btn.disabled=false;document.getElementById('btn-icon').textContent='🔍';document.getElementById('btn-text').textContent=T('btnAnalyze');document.getElementById('empty-state').classList.remove('hidden')};
+
+  if(!data.ok){
+    if(data.error==='network')showStatus(`🌐 ${T('errNetwork')}`,'error');
+    else showStatus(`🔒 ${T('errPrivate')}<br><span style="font-weight:400;font-size:.84rem;color:var(--g500)">${T('errPrivateDetail')}</span>`,'error');
+    resetBtn();return
+  }
+  if(data.noFiles){showStatus(T('noFiles'),'warn');resetBtn();return}
+
+  STATE.analyzed=true;STATE.totalContextTokens=data.totalContextTokens;STATE.foundByTool=data.foundByTool;STATE.uniqueRefs=data.uniqueRefs;
+
+  clearStatus();
+  renderDetection(data.foundByTool,data.uniqueRefs,data.branch);
+  document.getElementById('results').classList.remove('hidden');
+  document.getElementById('empty-state').classList.add('hidden');
+  recalcCost();
+  btn.disabled=false;document.getElementById('btn-icon').textContent='🔍';document.getElementById('btn-text').textContent=T('btnAnalyze');
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ══════════════════════════════════════
+// MODE SWITCHER
+// ══════════════════════════════════════
+function setMode(mode){
+  document.getElementById('section-analyze').classList.toggle('hidden',mode!=='analyze');
+  document.getElementById('section-compare').classList.toggle('hidden',mode!=='compare');
+  document.getElementById('mode-tab-analyze').classList.toggle('active',mode==='analyze');
+  document.getElementById('mode-tab-compare').classList.toggle('active',mode==='compare');
+}
+
+// ══════════════════════════════════════
+// COMPARE REPOS
+// ══════════════════════════════════════
+const COMPARE_STATE={repos:[],results:[],chart:null};
+
+function addToCompare(){
+  const url=document.getElementById('cmp-url').value.trim();
+  if(!url)return;
+  const parsed=parseRepoUrl(url);
+  if(!parsed){showCmpStatus('❌ URL inválida','error');return}
+  const key=`${parsed.owner}/${parsed.repo}`;
+  if(COMPARE_STATE.repos.find(r=>r.key===key))return;
+  if(COMPARE_STATE.repos.length>=6){showCmpStatus('Máximo 6 repositórios','warn');return}
+  COMPARE_STATE.repos.push({key,...parsed});
+  document.getElementById('cmp-url').value='';
+  renderCmpQueue();
+}
+
+function removeFromCompare(key){
+  COMPARE_STATE.repos=COMPARE_STATE.repos.filter(r=>r.key!==key);
+  renderCmpQueue();
+}
+
+function renderCmpQueue(){
+  const el=document.getElementById('cmp-queue');
+  el.innerHTML=COMPARE_STATE.repos.map(r=>`<div class="compare-repo-chip"><span class="crep-name">${r.key}</span><button class="remove-chip" onclick="removeFromCompare('${r.key}')" title="Remover">✕</button></div>`).join('');
+  document.getElementById('cmp-run-btn').disabled=COMPARE_STATE.repos.length<2;
+}
+
+async function runCompare(){
+  if(COMPARE_STATE.repos.length<2)return;
+  const btn=document.getElementById('cmp-run-btn');
+  btn.disabled=true;document.getElementById('cmp-run-icon').textContent='⏳';
+  document.getElementById('cmp-results').classList.add('hidden');
+  COMPARE_STATE.results=[];
+
+  for(let i=0;i<COMPARE_STATE.repos.length;i++){
+    const r=COMPARE_STATE.repos[i];
+    showCmpStatus(`<div class="cmp-progress"><div class="spinner"></div><span>${T('cmpScanning')} <strong class="cmp-scanning">${r.key}</strong> (${i+1}/${COMPARE_STATE.repos.length})…</span></div>`,'loading');
+    const data=await analyzeRepoData(r.owner,r.repo);
+    COMPARE_STATE.results.push({key:r.key,...data});
+  }
+
+  clearCmpStatus();
+  renderCompareResults();
+  btn.disabled=COMPARE_STATE.repos.length<2;
+  document.getElementById('cmp-run-icon').textContent='⚖️';
+  document.getElementById('cmp-results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function renderCompareResults(){
+  const results=COMPARE_STATE.results;
+  if(!results.length)return;
+
+  const modelId=document.getElementById('cmp-sel-model').value;
+  const m=PRICING[modelId];
+  const devs=+document.getElementById('cmp-sl-devs').value;
+  const chats=+document.getElementById('cmp-sl-chats').value;
+  document.getElementById('cmp-val-devs').textContent=devs;
+  document.getElementById('cmp-val-chats').textContent=chats;
+  const isBRL=document.getElementById('chk-brl').checked;
+
+  function costFor(tok){
+    const cached=Math.round(tok*0.7);const uncached=tok-cached;
+    const ic=(uncached/1e6)*m.input;const cc=(cached/1e6)*(m.cacheRead||0);
+    const cw=m.cacheWrite?(cached/1e6)*m.cacheWrite*0.05:0;
+    const oc=(2000/1e6)*m.output;
+    return ic+cc+cw+oc;
+  }
+
+  // Horizontal bar chart
+  if(COMPARE_STATE.chart)COMPARE_STATE.chart.destroy();
+  COMPARE_STATE.chart=new Chart(document.getElementById('chart-compare'),{
+    type:'bar',
+    data:{
+      labels:results.map(r=>r.key.split('/').pop()),
+      datasets:[{
+        label:'tokens',
+        data:results.map(r=>r.totalContextTokens||0),
+        backgroundColor:results.map(r=>{const t=r.totalContextTokens||0;return t<5000?'#16a34a':t<10000?'#d97706':t<20000?'#ea580c':'#dc2626'}),
+        borderRadius:8,borderSkipped:false
+      }]
+    },
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmtTok(ctx.parsed.x)+' tokens'}}},
+      scales:{x:{grid:{color:'#e5e7eb'},ticks:{callback:v=>fmtTok(v)}},y:{grid:{display:false}}}
+    }
+  });
+
+  // Table
+  const colLabels=[T('cmpColRepo'),T('cmpColTools'),T('cmpColTokens'),'$/req','$/dia','$/mês','$/ano'];
+  const hdr=`<thead><tr>${colLabels.map((h,i)=>`<th class="${i>1?'num':''}">${h}</th>`).join('')}</tr></thead>`;
+
+  const rows=results.map(r=>{
+    if(!r.ok){
+      const errMsg={private:'Repositório privado',network:'Erro de rede',notfound:'Não encontrado'}[r.error]||r.error;
+      return`<tr><td><a href="https://github.com/${r.key}" target="_blank" style="color:var(--blue);font-weight:700;text-decoration:none">${r.key}</a></td><td colspan="6" style="color:var(--red);font-size:.82rem">⚠ ${errMsg}</td></tr>`;
+    }
+    const tok=r.totalContextTokens||0;
+    const pr=costFor(tok);const pd=pr*devs*chats;const pm=pd*22;const py=pm*12;
+    const hc=tok<5000?'#16a34a':tok<10000?'#d97706':tok<20000?'#ea580c':'#dc2626';
+    const foundToolIds=Object.keys(r.foundByTool||{});
+    const pills=foundToolIds.map(tid=>{const t=AGENT_TOOLS.find(x=>x.id===tid);return t?`<span style="background:${t.color}22;color:${t.color};border-radius:99px;padding:1px 7px;font-size:.67rem;font-weight:700;display:inline-block;margin:1px">${t.icon} ${t.name}</span>`:''}).join('');
+    return`<tr>
+      <td><a href="https://github.com/${r.key}" target="_blank" style="color:var(--blue);font-weight:700;text-decoration:none">${r.key}</a>${r.noFiles?`<br><span style="font-size:.72rem;color:var(--g400)">${T('cmpNoConfigs')}</span>`:''}</td>
+      <td>${pills||`<span style="color:var(--g400);font-size:.8rem">—</span>`}</td>
+      <td class="num"><span style="color:${hc};font-weight:800">${fmtTok(tok)}</span></td>
+      <td class="num">${fmt(pr)}</td>
+      <td class="num">${fmt(pd)}</td>
+      <td class="num">${fmt(pm)}</td>
+      <td class="num">${fmt(py)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('cmp-result-table').innerHTML=hdr+'<tbody>'+rows+'</tbody>';
+  document.getElementById('cmp-results').classList.remove('hidden');
+}
+
+function showCmpStatus(m,t='loading'){
+  document.getElementById('cmp-status-area').innerHTML=`<div class="status-card ${t}">${m}</div>`;
+}
+function clearCmpStatus(){document.getElementById('cmp-status-area').innerHTML=''}
+
+// ══════════════════════════════════════
+// RENDER DETECTION
+// ══════════════════════════════════════
+function renderDetection(foundByTool,uniqueRefs,branch){
+  const foundToolIds=Object.keys(foundByTool);
+  const foundTools=AGENT_TOOLS.filter(t=>foundToolIds.includes(t.id));
+  const agentTok=foundTools.reduce((s,t)=>s+estimateTokens(foundByTool[t.id].content),0);
+  const foundRefs=uniqueRefs.filter(r=>r.found);
+  const sharedRefs=uniqueRefs.filter(r=>r.found&&r.fromTools.size>1);
+  const uniqueRefTok=foundRefs.reduce((s,r)=>s+r.tokens,0);
+  let naiveTot=agentTok;
+  for(const t of foundTools){naiveTot+=uniqueRefs.filter(r=>r.fromTools.has(t.id)&&r.found).reduce((s,r)=>s+r.tokens,0)}
+  const dedupTot=agentTok+uniqueRefTok;
+  const savings=naiveTot-dedupTot;
+
+  // Stats
+  document.getElementById('stats-bar').innerHTML=`
+    <div class="stat-card green"><div class="stat-num">${foundTools.length}</div><div class="stat-label">${T('tools')}</div></div>
+    <div class="stat-card blue"><div class="stat-num">${fmtTok(agentTok)}</div><div class="stat-label">config tokens</div></div>
+    <div class="stat-card purple"><div class="stat-num">${uniqueRefs.length}</div><div class="stat-label">${T('refs')}</div></div>
+    <div class="stat-card orange"><div class="stat-num">${fmtTok(dedupTot)}</div><div class="stat-label">total context</div></div>
+    ${sharedRefs.length?`<div class="stat-card teal"><div class="stat-num">${sharedRefs.length}</div><div class="stat-label">${T('shared')}</div></div>`:''}
+    ${savings>0?`<div class="stat-card pink"><div class="stat-num">−${fmtTok(savings)}</div><div class="stat-label">dedup</div></div>`:''}`;
+
+  // Savings banner
+  const ban=document.getElementById('savings-banner');
+  if(savings>0){ban.classList.remove('hidden');ban.innerHTML=`<div class="s-icon">♻️</div><div class="s-body"><div class="s-title">${T('dedupTitle')}</div><div class="s-detail">${T('dedupDetail')(sharedRefs.length,fmtTok(naiveTot),fmtTok(dedupTot))}</div></div><div class="s-num">−${fmtTok(savings)} tok</div>`}else ban.classList.add('hidden');
+
+  // Tool grid
+  document.getElementById('tools-found-pill').textContent=`${foundTools.length} / ${AGENT_TOOLS.length}`;
+  document.getElementById('tool-grid').innerHTML=AGENT_TOOLS.map(t=>{const f=!!foundByTool[t.id];const tk=f?estimateTokens(foundByTool[t.id].content):0;return`<div class="tool-card ${f?'found':'missing'}"><div class="tool-icon">${t.icon}</div><div class="tool-info"><div class="tool-name">${t.name}</div><div class="tool-file">${f?foundByTool[t.id].path:t.files[0]}</div>${f?`<div style="font-size:.72rem;color:var(--green);font-weight:700;margin-top:1px">~${fmtTok(tk)} ${T('tokens')}</div>`:''}</div>${f?'<div class="found-dot"></div>':'<div class="miss-dot"></div>'}</div>`}).join('');
+
+  // Context tree
+  const treeItems=[];
+  for(const tool of foundTools){const{path,content}=foundByTool[tool.id];const tk=estimateTokens(content);
+    treeItems.push(`<div class="tree-item"><span style="font-size:1.1rem">${tool.icon}</span><span class="t-path root">${path}</span><div class="t-right"><span class="t-tool" ${toolPill(tool.id)}>${tool.name}</span><span class="t-tok">~${fmtTok(tk)} tok</span></div></div>`);
+    const toolRefs=uniqueRefs.filter(r=>r.fromTools.has(tool.id));
+    for(const ref of toolRefs){const isShared=ref.fromTools.size>1;const first=[...ref.fromTools][0];const isDup=isShared&&first!==tool.id;
+      const icon=!ref.found?'❓':/\.md/.test(ref.path)?'📄':/\.json/.test(ref.path)?'📋':/\.(ts|js|py|go|rs|rb)$/.test(ref.path)?'🟨':'📁';
+      treeItems.push(`<div class="tree-item" style="padding-left:18px"><span style="color:var(--g400);margin-right:3px">└─</span><span style="font-size:.9rem">${icon}</span><span class="${isDup?'t-path dedup':'t-path'}" style="${!ref.found?'color:var(--red)':''}">${ref.path}</span><div class="t-right">${isShared?`<span class="t-tool" style="background:#0d948822;color:var(--teal);border-radius:99px;padding:1px 7px;font-size:.67rem;font-weight:700">${isDup?T('already'):T('shared')}</span>`:''}<span class="t-tok">${!ref.found?T('missing'):isDup?'':('~'+fmtTok(ref.tokens)+' tok')}</span></div></div>`)}}
+  document.getElementById('context-tree').innerHTML=treeItems.join('');
+  document.getElementById('tree-count-pill').textContent=`${foundTools.length} + ${uniqueRefs.length} ${T('files')}`;
+
+  // Agent file viewers
+  document.getElementById('agent-files-pill').textContent=`${foundTools.length} ${T('found')}`;
+  document.getElementById('agent-files-list').innerHTML=foundTools.map((tool,i)=>{const{path,content}=foundByTool[tool.id];const tk=estimateTokens(content);const bid=`ab-${i}`,rid=`ar-${i}`,wid=`aw-${i}`;
+    return`<div class="agent-file-block" id="${bid}"><div class="agent-file-header" onclick="toggleAgentFile(this)"><div class="agent-file-title"><span style="font-size:1.2rem">${tool.icon}</span><span class="file-badge">${path}</span><span style="color:var(--g500);font-size:.8rem">${tool.name}</span></div><div style="display:flex;align-items:center;gap:7px"><span class="token-badge">~${fmtTok(tk)} tok</span><span style="color:var(--g400)">▾</span></div></div><div class="agent-file-body"><div class="tab-bar"><button class="tab-btn active" onclick="switchTab(this,'${rid}','${bid}')">${T('rendered')}</button><button class="tab-btn" onclick="switchTab(this,'${wid}','${bid}')">${T('raw')}</button></div><div class="tab-content active" id="${rid}"><div class="md-body">${renderMd(content)}</div></div><div class="tab-content" id="${wid}"><div class="raw-code">${content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div></div></div>`}).join('');
+
+  // Refs
+  const missingRefs=uniqueRefs.filter(r=>!r.found);
+  document.getElementById('refs-count-pill').textContent=`${foundRefs.length} ${T('resolved')} · ${missingRefs.length} ${T('missing')}`;
+  if(!uniqueRefs.length){document.getElementById('refs-grid').innerHTML=`<div class="empty-state" style="padding:36px;background:#fff;border-radius:14px"><div class="icon">🔍</div><h3>${T('noRefs')}</h3><p>${T('noRefsP')}</p></div>`;return}
+  document.getElementById('refs-grid').innerHTML=uniqueRefs.map(ref=>{const isShared=ref.fromTools.size>1;
+    const tags=[ref.found?`<span class="ref-tag found">✓</span>`:`<span class="ref-tag missing">✗</span>`,`<span class="ref-tag type">${ref.type}</span>`,isShared?`<span class="ref-tag shared">${T('shared')} ×${ref.fromTools.size}</span>`:'',ref.found?`<span class="token-badge">~${fmtTok(ref.tokens)} tok</span>`:'',...[...ref.fromTools].map(tid=>{const tt=AGENT_TOOLS.find(x=>x.id===tid);return tt?`<span class="t-tool" ${toolPill(tid)}>${tt.icon}</span>`:''})].join('');
+    const cnt=ref.found?(/\.(md|mdx)$/.test(ref.path)?`<div class="md-body">${renderMd(ref.content)}</div>`:`<div class="raw-code">${ref.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`):`<p style="color:var(--red);font-style:italic;padding:6px 0">${T('missing')} (${branch})</p>`;
+    return`<div class="ref-card ${!ref.found?'not-found':''}"><div class="ref-card-header" onclick="toggleRef(this)"><span class="ref-path">${ref.path}</span><div class="ref-meta">${tags}<span style="color:var(--g400)">▾</span></div></div><div class="ref-content">${cnt}</div></div>`}).join('');
+
+  // Render Context Health
+  renderHealth(foundByTool, uniqueRefs);
+}
+
+// ══════════════════════════════════════
+// CONTEXT HEALTH
+// Provider limits & ideal baselines
+// ══════════════════════════════════════
+const HEALTH_LIMITS = {
+  codex:   { ideal:3000, warn:6000,  max:8000,  note:'healthCodexWarn' },
+  claude:  { ideal:2000, warn:5000,  max:20000, note:'healthClaudeWarn' },
+  cursor:  { ideal:2000, warn:5000,  max:10000, note:null },
+  copilot: { ideal:1500, warn:3000,  max:5000,  note:'healthCopilotWarn' },
+  windsurf:{ ideal:2000, warn:5000,  max:10000, note:null },
+  aider:   { ideal:2000, warn:5000,  max:10000, note:null },
+  devin:   { ideal:2000, warn:5000,  max:10000, note:null },
+};
+
+function healthGrade(tokens, limit) {
+  const ratio = tokens / limit.warn;
+  if (ratio <= 0.5) return { label: 'healthLean', color: 'var(--green)', bg: 'var(--green-l)', pct: Math.min(100, (tokens / limit.max) * 100) };
+  if (ratio <= 1.0) return { label: 'healthModerate', color: 'var(--yellow)', bg: 'var(--yellow-l)', pct: Math.min(100, (tokens / limit.max) * 100) };
+  if (ratio <= 1.6) return { label: 'healthHeavy', color: 'var(--orange)', bg: 'var(--orange-l)', pct: Math.min(100, (tokens / limit.max) * 100) };
+  return { label: 'healthBloated', color: 'var(--red)', bg: 'var(--red-l)', pct: 100 };
+}
+
+function renderHealth(foundByTool, uniqueRefs) {
+  const el = document.getElementById('health-section');
+  const foundToolIds = Object.keys(foundByTool);
+  const foundTools = AGENT_TOOLS.filter(t => foundToolIds.includes(t.id));
+  if (!foundTools.length) { el.innerHTML = ''; return; }
+
+  const totalRef = uniqueRefs.filter(r=>r.found).reduce((s,r)=>s+r.tokens, 0);
+
+  // Per-file health bars
+  const bars = foundTools.map(tool => {
+    const { path, content } = foundByTool[tool.id];
+    const tok = estimateTokens(content);
+    const lim = HEALTH_LIMITS[tool.id] || HEALTH_LIMITS.claude;
+    const g = healthGrade(tok, lim);
+    const warn = lim.note ? `<div style="font-size:.74rem;color:var(--orange);margin-top:4px">${T(lim.note)}</div>` : '';
+    const overMax = tok > lim.max;
+
+    return `
+      <div style="background:#fff;border-radius:10px;padding:16px 18px;border:1px solid var(--g200);margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:1.1rem">${tool.icon}</span>
+            <span style="font-family:monospace;font-weight:700;font-size:.85rem">${path}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:.76rem;font-weight:700;color:${g.color}">${T(g.label).toUpperCase()}</span>
+            <span style="font-family:monospace;font-size:.82rem;font-weight:700">${fmtTok(tok)}</span>
+            <span style="font-size:.74rem;color:var(--g400)">/ ${fmtTok(lim.ideal)} ${T('healthIdeal')}</span>
+          </div>
+        </div>
+        <div style="background:var(--g200);border-radius:6px;height:8px;overflow:hidden;position:relative">
+          <div style="position:absolute;left:0;top:0;height:100%;width:${Math.min(100,(lim.ideal/lim.max)*100)}%;border-right:2px dashed var(--g400);z-index:1"></div>
+          <div style="background:${g.color};height:100%;width:${g.pct}%;border-radius:6px;transition:width .3s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-size:.68rem;color:var(--g400)">0</span>
+          <span style="font-size:.68rem;color:var(--g400)">┆ ${fmtTok(lim.ideal)} ideal</span>
+          <span style="font-size:.68rem;color:var(--g400)">┆ ${fmtTok(lim.warn)} warn</span>
+          <span style="font-size:.68rem;color:var(--g400)">${fmtTok(lim.max)}</span>
+        </div>
+        ${overMax ? `<div style="font-size:.74rem;color:var(--red);font-weight:700;margin-top:4px">⚠ Exceeds recommended maximum (${fmtTok(lim.max)})</div>` : ''}
+        ${warn}
+      </div>`;
+  }).join('');
+
+  // Total context health (config + refs)
+  const totalTok = foundTools.reduce((s,t) => s + estimateTokens(foundByTool[t.id].content), 0) + totalRef;
+  const totalIdeal = 8000;
+  const totalWarn = 20000;
+  const totalMax = 50000;
+  const tg = healthGrade(totalTok, { ideal: totalIdeal, warn: totalWarn, max: totalMax });
+
+  el.innerHTML = `
+    <div class="section-header"><h2>${T('hHealth')}</h2></div>
+    <div style="background:#fff;border-radius:14px;padding:22px;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:20px">
+
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--g200)">
+        <div style="width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:${tg.color};background:${tg.bg}">${T(tg.label).charAt(0).toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:1rem;margin-bottom:2px">${T('healthTotal')}: <span style="color:${tg.color}">${T(tg.label)}</span></div>
+          <div style="font-family:monospace;font-size:.88rem"><span style="font-weight:700">${fmtTok(totalTok)}</span> <span style="color:var(--g400)">total tokens loaded per request</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.74rem;color:var(--g500);font-weight:600">${T('healthBaseline')}</div>
+          <div style="font-family:monospace;font-weight:700;font-size:.88rem;color:var(--green)">${fmtTok(totalIdeal)}</div>
+        </div>
+      </div>
+
+      <div style="background:var(--g200);border-radius:6px;height:10px;overflow:hidden;position:relative;margin-bottom:6px">
+        <div style="position:absolute;left:0;top:0;height:100%;width:${Math.min(100,(totalIdeal/totalMax)*100)}%;border-right:2px dashed var(--g400);z-index:1"></div>
+        <div style="position:absolute;left:0;top:0;height:100%;width:${Math.min(100,(totalWarn/totalMax)*100)}%;border-right:2px dashed var(--orange);z-index:1"></div>
+        <div style="background:${tg.color};height:100%;width:${tg.pct}%;border-radius:6px;transition:width .3s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--g400);margin-bottom:18px">
+        <span>0</span>
+        <span>┆ ${fmtTok(totalIdeal)} ideal</span>
+        <span>┆ ${fmtTok(totalWarn)} warn</span>
+        <span>${fmtTok(totalMax)}</span>
+      </div>
+
+      <div style="font-size:.82rem;font-weight:700;color:var(--g700);margin-bottom:10px">${T('healthPerFile')}</div>
+      ${bars}
+    </div>`;
+}
+
+// ══════════════════════════════════════
+// COST CALCULATOR
+// ══════════════════════════════════════
+function recalcCost(){
+  if(!STATE.analyzed)return;
+  updateSliderLabels();
+
+  const modelId=document.getElementById('sel-model').value;
+  const m=PRICING[modelId];
+  const outputTok=parseInt(document.getElementById('sel-output').value);
+  const devs=parseInt(document.getElementById('sl-devs').value);
+  const chats=parseInt(document.getElementById('sl-chats').value);
+  const cacheRate=parseInt(document.getElementById('sl-cache').value)/100;
+  const isBRL=document.getElementById('chk-brl').checked;
+
+  const ctxTok=STATE.totalContextTokens;
+  const cachedTok=Math.round(ctxTok*cacheRate);
+  const uncachedTok=ctxTok-cachedTok;
+
+  // Cost per request (in USD)
+  const inputCost=(uncachedTok/1e6)*m.input;
+  const cacheCost=(cachedTok/1e6)*(m.cacheRead||0);
+  const cacheWriteCost=m.cacheWrite?((cachedTok/1e6)*m.cacheWrite*0.05):0; // ~5% of requests are cache misses/writes
+  const outputCost=(outputTok/1e6)*m.output;
+  const perReq=inputCost+cacheCost+cacheWriteCost+outputCost;
+
+  const perDay=perReq*devs*chats;
+  const perMonth=perDay*22;
+  const perYear=perMonth*12;
+
+  // KPIs
+  document.getElementById('kpi-row').innerHTML=`
+    <div class="kpi blue"><div class="k-num">${fmtTok(ctxTok)}</div><div class="k-label">${T('kpiContext')}</div></div>
+    <div class="kpi green"><div class="k-num">${fmt(perReq)}</div><div class="k-label">${T('kpiReq')}</div></div>
+    <div class="kpi orange"><div class="k-num">${fmt(perDay)}</div><div class="k-label">${T('kpiDay')}</div></div>
+    <div class="kpi purple"><div class="k-num">${fmt(perMonth)}</div><div class="k-label">${T('kpiMonth')}</div></div>
+    <div class="kpi red"><div class="k-num">${fmt(perYear)}</div><div class="k-label">${T('kpiYear')}</div></div>`;
+
+  // Breakdown donut
+  const brkData=[inputCost+cacheWriteCost,cacheCost,outputCost].map(v=>+(v*devs*chats*22).toFixed(2));
+  if(chartBreakdown)chartBreakdown.destroy();
+  chartBreakdown=new Chart(document.getElementById('chart-breakdown'),{type:'doughnut',data:{labels:[T('brkInput'),T('brkCache'),T('brkOutput')],datasets:[{data:brkData,backgroundColor:['#2563eb','#0d9488','#ea580c'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,weight:'bold'},padding:12}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmt(ctx.parsed)}}}}});
+
+  // Per-dev chart
+  const devSteps=[1,5,10,25,50,100].filter(d=>d<=Math.max(devs*2,10));
+  if(!devSteps.includes(devs))devSteps.push(devs);
+  devSteps.sort((a,b)=>a-b);
+  const devCosts=devSteps.map(d=>Math.round(perReq*d*chats*22));
+
+  if(chartPerDev)chartPerDev.destroy();
+  chartPerDev=new Chart(document.getElementById('chart-perdev'),{type:'bar',data:{labels:devSteps.map(d=>d+(LANG==='pt'?' devs':' devs')),datasets:[{label:T('perDevTitle'),data:devCosts,backgroundColor:devSteps.map(d=>d===devs?'#2563eb':'#93c5fd'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmt(ctx.parsed.y)+' '+T('kpiMonth')}}},scales:{y:{ticks:{callback:v=>isBRL?'R$'+Math.round(v*BRL_RATE).toLocaleString('pt-BR'):'$'+v.toLocaleString()},grid:{color:'#e5e7eb'}},x:{grid:{display:false}}}}});
+
+  // Comparison table (sortable)
+  const table=document.getElementById('comparison-table');
+  const colHeaders=[T('thModel'),T('thReq'),T('thDay'),T('thMonth'),T('thYear')];
+  const arrow=i=>sortCol===i?(sortDir===1?'▲':'▼'):'⇅';
+  const hdr=`<thead><tr>${colHeaders.map((h,i)=>`<th class="${i?'num':''} sortable" onclick="sortTable(${i})" style="cursor:pointer;user-select:none;white-space:nowrap">${h} <span style="opacity:.4;font-size:.7rem">${arrow(i)}</span></th>`).join('')}</tr></thead>`;
+
+  const rowData=Object.entries(PRICING).map(([id,p])=>{
+    const ic=(uncachedTok/1e6)*p.input;
+    const cc=(cachedTok/1e6)*(p.cacheRead||0);
+    const cw=p.cacheWrite?((cachedTok/1e6)*p.cacheWrite*0.05):0;
+    const oc=(outputTok/1e6)*p.output;
+    const pr=ic+cc+cw+oc;
+    const pd=pr*devs*chats;
+    const pm=pd*22;
+    const py=pm*12;
+    return{id,name:p.name,provider:p.provider,vals:[pr,pd,pm,py]};
+  });
+
+  // Sort
+  if(sortCol===0) rowData.sort((a,b)=>sortDir*a.name.localeCompare(b.name));
+  else rowData.sort((a,b)=>sortDir*(a.vals[sortCol-1]-b.vals[sortCol-1]));
+
+  const rows=rowData.map(r=>{
+    const sel=r.id===modelId?'style="background:var(--blue-l);font-weight:700"':'';
+    return`<tr ${sel}><td>${r.name}<br><span style="font-size:.7rem;color:var(--g500)">${r.provider}</span></td>${r.vals.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}</tr>`;
+  }).join('');
+  table.innerHTML=hdr+'<tbody>'+rows+'</tbody>';
+}
+
+function sortTable(col){
+  if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=col===0?1:-1}
+  recalcCost();
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+document.getElementById('repo-url').addEventListener('keydown',e=>{if(e.key==='Enter')analyze()})
+document.getElementById('cmp-url').addEventListener('keydown',e=>{if(e.key==='Enter')addToCompare()});
+applyI18N();
+</script>
+</body>
+</html>
