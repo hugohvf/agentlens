@@ -1,0 +1,11 @@
+{
+  "repos": [
+    { "path": ".", "name": "My App" },
+    { "path": "../other-service", "name": "Other Service" }
+  ],
+  "baselines": [
+    "anthropics/anthropic-cookbook",
+    "openai/openai-agents-python"
+  ],
+  "output": "agentlens-report.html"
+}

@@ -1,0 +1,33 @@
+{
+  "name": "agentlens",
+  "version": "1.0.0",
+  "description": "Scan local and public repos for AI agent context cost — detect CLAUDE.md, AGENTS.md, .cursorrules and calculate token costs across all major LLM providers",
+  "main": "agentlens-core.js",
+  "bin": {
+    "agentlens": "./cli.js"
+  },
+  "files": [
+    "agentlens.html",
+    "agentlens-core.js",
+    "cli.js"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "claude",
+    "context",
+    "tokens",
+    "cost",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "cursorrules"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hugohvf/agentlens"
+  }
+}

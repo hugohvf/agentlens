@@ -1,53 +1,127 @@
 # AgentLens — AI Context Cost Scanner
 
-**AgentLens** is a single-file web app that scans any public GitHub repository to detect AI agent configuration files, resolves their referenced dependencies, and calculates the real token cost per request across all major LLM providers.
+**AgentLens** scans repositories for AI agent configuration files (`CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `copilot-instructions.md`, and more), resolves every referenced file, and calculates the real token cost per request across all major LLM providers.
 
-## What it does
+Works as a **web app** (public GitHub repos) and a **CLI** (local/private repos) — same UI either way.
 
-When you work with AI coding agents (Claude Code, OpenAI Codex, Cursor, Copilot), every session starts by loading configuration files like `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, and `copilot-instructions.md`. These files consume tokens on **every request** — and most teams have no idea how much that costs at scale.
+---
 
-AgentLens gives you visibility into:
+## Web App
 
-- **Which agent config files exist** in a repo (CLAUDE.md, AGENTS.md, .cursorrules, copilot-instructions, and more)
-- **What files they reference** (imported docs, rules, skill files, etc.) and their token counts
-- **Deduplication** of shared references loaded by multiple config files
-- **Real context cost per request** broken down by provider (Claude, GPT-4o, Gemini, etc.)
-- **Team-wide cost projection** based on number of developers and requests per day
-- **Side-by-side repo comparison** to benchmark context efficiency across projects
+Zero-install. Download `agentlens.html`, open in any browser, paste a GitHub URL.
 
-## How to use
+```
+1. Download agentlens.html
+2. Open in Chrome, Firefox, Safari, or Edge
+3. Paste: https://github.com/owner/repo
+4. Click Analyze
+```
 
-AgentLens is a **zero-install, single HTML file**. No server, no build step, no dependencies to install.
+All processing happens in your browser via the GitHub public API.
 
-1. Download `agentlens.html`
-2. Open it in any modern browser (Chrome, Firefox, Safari, Edge)
-3. Enter a public GitHub repository URL (e.g. `https://github.com/anthropics/claude-code`)
-4. Click **Scan** and wait a few seconds
+---
 
-That's it. All processing happens in your browser via the GitHub API.
+## CLI — Scan Local & Private Repos
 
-> **Note:** For private repositories or to avoid rate limiting, you can add a GitHub Personal Access Token in the tool's settings. No token is stored anywhere — it's kept only in memory for the session.
+Scan any local repository and get the same interactive HTML report — no GitHub API, no internet required for the scan.
+
+### Requirements
+
+- Node.js ≥ 18
+
+### Install
+
+```bash
+npm install -g agentlens
+# or run without installing:
+npx agentlens
+```
+
+### Usage
+
+```bash
+# Scan current directory
+agentlens
+
+# Scan a specific path
+agentlens /path/to/my-repo
+
+# Scan multiple repos at once
+agentlens --path . --path ../other-service
+
+# Custom output file
+agentlens --out report.html
+
+# Open in browser immediately after generating
+agentlens --open
+
+# Print JSON summary to stdout (no HTML)
+agentlens --stdout
+
+# Use a config file (see .agentlens.json below)
+agentlens --config .agentlens.json
+
+# Version
+agentlens --version
+```
+
+The generated `agentlens-report.html` opens immediately with your local repo data. You can still add public GitHub repos in the Compare tab for baseline comparison — those are fetched live from your browser.
+
+### `.agentlens.json` — Workspace Config
+
+Place this file in your repo root to define which paths to scan and which public repos to use as baselines:
+
+```json
+{
+  "repos": [
+    { "path": ".", "name": "My App" },
+    { "path": "../other-service", "name": "Other Service" }
+  ],
+  "baselines": [
+    "anthropics/anthropic-cookbook",
+    "openai/openai-agents-python"
+  ],
+  "output": "agentlens-report.html"
+}
+```
+
+Run `agentlens` with no flags in the same directory — it picks up the config automatically.
+
+- `repos` — local paths to scan (resolved relative to the config file). Defaults to `[{ "path": "." }]` if omitted.
+- `baselines` — public GitHub repos pre-loaded in the Compare tab as baseline references (fetched live in the browser).
+- `output` — output file name. Defaults to `agentlens-report.html`.
+
+See `.agentlens.example.json` for a full example.
+
+---
+
+## What It Detects
+
+| Tool | Files |
+|---|---|
+| Claude Code | `CLAUDE.md`, `CLAUDE.local.md` |
+| OpenAI Codex | `AGENTS.md` |
+| Cursor | `.cursorrules`, `.cursor/rules/` |
+| GitHub Copilot | `.github/copilot-instructions.md` |
+| Windsurf | `.windsurfrules` |
+| Aider | `CONVENTIONS.md`, `.aider.conf.yml` |
+| Devin | `.devin/instructions.md`, `DEVIN.md` |
+
+For each file found, AgentLens also resolves referenced files (`@import`, `!include`, markdown links, inline code paths) and counts their tokens — with deduplication across tools that reference the same file.
 
 ## Features
 
 | Feature | Description |
 |---|---|
-| Config file detection | Finds CLAUDE.md, AGENTS.md, .cursorrules, copilot-instructions.md, and variants |
-| Reference resolution | Follows `@import`, `!include`, and common reference patterns to load linked files |
-| Token counting | Estimates token count for all detected context files |
-| Dedup logic | Identifies shared references counted once across multiple config files |
-| Cost calculator | Calculates cost per request across 10+ LLM provider/model combinations |
-| Team projection | Multiplies per-request cost by team size × daily requests for monthly spend |
-| Compare mode | Scan multiple repos and compare their context footprints side by side |
-| Bilingual UI | Toggle between English and Portuguese |
-
-## Dependencies
-
-AgentLens has a single external dependency loaded from CDN:
-
-- [Chart.js 4.4.1](https://www.chartjs.org/) — for cost comparison charts
-
-No npm, no build tools, no framework. Open the file and go.
+| Local repo scanning | CLI reads filesystem directly — no GitHub API needed for private repos |
+| Config file detection | 7 tools, 15+ file patterns |
+| Reference resolution | Follows `@import`, `!include`, markdown links, inline code paths |
+| Dedup logic | Shared references across multiple config files counted only once |
+| Cost calculator | 20+ models across Anthropic, OpenAI, Google, Cursor, DeepSeek, Mistral, xAI |
+| Team projection | Monthly cost = per-request × team size × daily chats × 22 working days |
+| Compare mode | Side-by-side comparison of multiple repos with chart + sortable table |
+| Baseline repos | Pre-seed the Compare tab with public repos from `.agentlens.json` |
+| Bilingual UI | English / Portuguese toggle |
 
 ## Context Engineering
 
@@ -56,6 +130,17 @@ This tool was built as a companion to a course on **Context Engineering** — th
 Key insight: `CLAUDE.md`, `AGENTS.md`, and similar files are loaded on **every single request**. A 10,000-token instruction file used by a 10-person team making 20 requests/day costs ~$50–300/month depending on the model — before any actual work happens.
 
 AgentLens makes that cost visible so teams can make informed decisions about what belongs in always-on context vs. skills, rules, or on-demand retrieval.
+
+## Files
+
+```
+agentlens/
+├── agentlens.html              # Web app + HTML report template (standalone)
+├── agentlens-core.js           # Shared analysis module (browser + Node.js)
+├── cli.js                      # CLI entry point
+├── package.json
+└── .agentlens.example.json     # Example workspace config
+```
 
 ## License
 

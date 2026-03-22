@@ -171,6 +171,18 @@ input[type=range]{width:100%;accent-color:var(--blue);height:6px;cursor:pointer}
 .empty-state p{font-size:.88rem;max-width:380px;margin:0 auto}
 footer{text-align:center;padding:28px 20px;color:var(--g400);font-size:.78rem}
 .hidden{display:none!important}
+/* LOCAL MODE BANNER */
+.local-banner{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;border-radius:14px;padding:18px 24px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(37,99,235,.25)}
+.local-banner .lb-icon{font-size:2rem;flex-shrink:0}
+.local-banner .lb-body{flex:1}
+.local-banner .lb-title{font-weight:800;font-size:1rem;margin-bottom:3px}
+.local-banner .lb-meta{font-size:.8rem;opacity:.8;font-family:monospace}
+.local-banner .lb-badge{background:rgba(255,255,255,.2);border-radius:99px;padding:3px 12px;font-size:.74rem;font-weight:700;white-space:nowrap}
+.local-repo-tab{background:var(--g50);border:2px solid var(--g200);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.15s;margin-bottom:8px}
+.local-repo-tab:hover{border-color:var(--blue);background:var(--blue-l)}
+.local-repo-tab.active{border-color:var(--blue);background:var(--blue-l)}
+.local-repo-tab .lrt-name{font-family:monospace;font-weight:700;font-size:.9rem}
+.local-repo-tab .lrt-tok{font-size:.78rem;color:var(--g500);font-weight:600}
 /* MODE TABS */
 .mode-tabs{display:flex;gap:0;margin-bottom:20px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 .mode-tab{flex:1;padding:13px;text-align:center;font-weight:700;font-size:.92rem;cursor:pointer;border:none;background:none;color:var(--g500);transition:.2s;border-bottom:3px solid transparent}
@@ -210,6 +222,9 @@ footer{text-align:center;padding:28px 20px;color:var(--g400);font-size:.78rem}
 </div>
 
 <div class="container">
+  <!-- LOCAL MODE BANNER (shown when opened from CLI) -->
+  <div id="local-banner" class="local-banner hidden" style="margin-top:20px"></div>
+
   <!-- MODE SWITCHER -->
   <div class="mode-tabs" style="margin-top:20px">
     <button class="mode-tab active" onclick="setMode('analyze')" id="mode-tab-analyze"></button>
@@ -1298,6 +1313,107 @@ function sortTable(col){
 document.getElementById('repo-url').addEventListener('keydown',e=>{if(e.key==='Enter')analyze()})
 document.getElementById('cmp-url').addEventListener('keydown',e=>{if(e.key==='Enter')addToCompare()});
 applyI18N();
+
+// ══════════════════════════════════════
+// PRESEED / LOCAL MODE
+// Activated when opened from `agentlens` CLI
+// ══════════════════════════════════════
+(function(){
+  const seed = window.AGENTLENS_LOCAL_DATA;
+  if (!seed || !seed.repos || !seed.repos.length) return;
+
+  // Hide GitHub input section — local report needs no URL entry
+  document.getElementById('input-section').classList.add('hidden');
+  document.getElementById('empty-state').classList.add('hidden');
+
+  // Normalize fromTools: Array → Set (rendering functions expect Set)
+  seed.repos.forEach(r => {
+    r.uniqueRefs.forEach(ref => {
+      ref.fromTools = new Set(Array.isArray(ref.fromTools) ? ref.fromTools : [ref.fromTools]);
+    });
+  });
+
+  // Show local mode banner
+  const banner = document.getElementById('local-banner');
+  banner.classList.remove('hidden');
+  const repoCount = seed.repos.length;
+  const totalTok = seed.repos.reduce((s,r) => s + (r.totalContextTokens || 0), 0);
+  const scanDate = seed.generatedAt ? new Date(seed.generatedAt).toLocaleString() : '';
+  banner.innerHTML = `
+    <div class="lb-icon">🖥️</div>
+    <div class="lb-body">
+      <div class="lb-title">Local Report${repoCount > 1 ? ` — ${repoCount} repos` : ` — ${seed.repos[0].repoName}`}</div>
+      <div class="lb-meta">${repoCount > 1 ? seed.repos.map(r=>r.repoName).join(', ') : seed.repos[0].localPath}${scanDate ? ' · Scanned ' + scanDate : ''}</div>
+    </div>
+    <div class="lb-badge">~${fmtTok(totalTok)} tokens total</div>`;
+
+  if (seed.repos.length === 1) {
+    // Single repo: render directly in Detection + Cost tabs
+    const r = seed.repos[0];
+    STATE.analyzed = true;
+    STATE.totalContextTokens = r.totalContextTokens;
+    STATE.foundByTool = r.foundByTool;
+    STATE.uniqueRefs = r.uniqueRefs;
+    renderDetection(r.foundByTool, r.uniqueRefs, r.repoName);
+    document.getElementById('results').classList.remove('hidden');
+    recalcCost();
+  } else {
+    // Multiple local repos: show repo selector tabs + auto-switch to compare mode
+    // Render first repo by default, add switcher
+    const firstRepo = seed.repos[0];
+    STATE.analyzed = true;
+    STATE.totalContextTokens = firstRepo.totalContextTokens;
+    STATE.foundByTool = firstRepo.foundByTool;
+    STATE.uniqueRefs = firstRepo.uniqueRefs;
+    renderDetection(firstRepo.foundByTool, firstRepo.uniqueRefs, firstRepo.repoName);
+    document.getElementById('results').classList.remove('hidden');
+    recalcCost();
+
+    // Inject repo selector above the main tabs
+    const tabs = document.querySelector('.main-tabs');
+    const selector = document.createElement('div');
+    selector.style.cssText = 'margin-bottom:16px';
+    selector.innerHTML = `<div style="font-size:.74rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Local Repos</div>` +
+      seed.repos.map((r, i) =>
+        `<div class="local-repo-tab${i===0?' active':''}" onclick="switchLocalRepo(${i})" id="lrt-${i}">
+          <span class="lrt-name">${r.repoName}</span>
+          <span class="lrt-tok">${r.noFiles ? 'no configs' : '~'+fmtTok(r.totalContextTokens)+' tokens'}</span>
+        </div>`
+      ).join('');
+    tabs.parentNode.insertBefore(selector, tabs);
+
+    // Expose switcher function
+    window.__localRepos = seed.repos;
+    window.switchLocalRepo = function(idx) {
+      document.querySelectorAll('.local-repo-tab').forEach((el, i) => el.classList.toggle('active', i === idx));
+      const r = window.__localRepos[idx];
+      STATE.analyzed = true;
+      STATE.totalContextTokens = r.totalContextTokens;
+      STATE.foundByTool = r.foundByTool;
+      STATE.uniqueRefs = r.uniqueRefs;
+      renderDetection(r.foundByTool, r.uniqueRefs, r.repoName);
+      document.getElementById('results').classList.remove('hidden');
+      recalcCost();
+    };
+
+    // Pre-populate compare queue with all local repos as github-style keys
+    seed.repos.forEach(r => {
+      const key = `local:${r.repoName}`;
+      if (!COMPARE_STATE.repos.find(x => x.key === key)) {
+        COMPARE_STATE.repos.push({ key, owner: null, repo: null, localData: r });
+      }
+    });
+  }
+
+  // Pre-populate compare queue with public baselines from .agentlens.json
+  (seed.baselines || []).forEach(key => {
+    if (!COMPARE_STATE.repos.find(r => r.key === key)) {
+      const parts = key.split('/');
+      if (parts.length === 2) COMPARE_STATE.repos.push({ key, owner: parts[0], repo: parts[1] });
+    }
+  });
+  renderCmpQueue();
+})();
 </script>
 </body>
 </html>
