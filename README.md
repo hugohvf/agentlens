@@ -32,9 +32,26 @@ Scan any local repository and get the same interactive HTML report — no GitHub
 ### Install
 
 ```bash
-npm install -g agentlens
-# or run without installing:
-npx agentlens
+npm install -g @hugofusinato/agentlens
+```
+
+This package publishes as `@hugofusinato/agentlens`, while the installed CLI command remains `agentlens` via the `bin` field in `package.json`.
+
+Before publishing, use one of these local equivalents:
+
+```bash
+# From this repo
+npm exec --yes --package . agentlens -- --version
+
+# Or install the local checkout globally for development
+npm link
+agentlens --version
+```
+
+After `npm publish`, this works from anywhere:
+
+```bash
+npx @hugofusinato/agentlens
 ```
 
 ### Usage
@@ -55,7 +72,7 @@ agentlens --out report.html
 # Open in browser immediately after generating
 agentlens --open
 
-# Print JSON summary to stdout (no HTML)
+# Print report JSON to stdout (no HTML)
 agentlens --stdout
 
 # Use a config file (see .agentlens.json below)
@@ -65,7 +82,12 @@ agentlens --config .agentlens.json
 agentlens --version
 ```
 
-The generated `agentlens-report.html` opens immediately with your local repo data. You can still add public GitHub repos in the Compare tab for baseline comparison — those are fetched live from your browser.
+The CLI now generates two sibling files:
+
+- `agentlens-report.html` — the viewer shell
+- `agentlens-report.json` — the local report data source
+
+The HTML viewer loads its sibling JSON when possible, can discover other report/comparison JSON files in the same folder, and can export/import saved comparisons. You can still add public GitHub repos in the Compare tab for baseline comparison — those are fetched live from your browser.
 
 ### `.agentlens.json` — Workspace Config
 

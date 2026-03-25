@@ -4,8 +4,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { analyzeLocalRepo, AGENT_TOOLS, fmtTok } = require('./agentlens-core');
-
-const VERSION = '1.0.0';
+const { version: VERSION } = require('./package.json');
 
 // ══════════════════════════════════════
 // ARG PARSER
@@ -111,29 +110,83 @@ function printSummary(results) {
 }
 
 // ══════════════════════════════════════
-// HTML REPORT GENERATOR
+// REPORT OUTPUT
 // ══════════════════════════════════════
-function generateReport(seedData, outputPath) {
+function makeRepoId(repoName, index) {
+  const slug = String(repoName || 'repo')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'repo';
+  return `${slug}-${index + 1}`;
+}
+
+function buildReportData(results, baselines, generatedAt) {
+  return {
+    kind: 'agentlens-report',
+    schemaVersion: 1,
+    generatedAt,
+    cliVersion: VERSION,
+    baselines,
+    repos: results.map((repo, index) => ({
+      repoId: makeRepoId(repo.repoName, index),
+      ...repo,
+    })),
+  };
+}
+
+function serializeInlineJson(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+function resolveOutputPaths(output) {
+  const rawOutput = path.resolve(output || 'agentlens-report.html');
+  const parsed = path.parse(rawOutput);
+  const ext = parsed.ext.toLowerCase();
+
+  if (ext === '.json') {
+    return {
+      htmlPath: path.join(parsed.dir, `${parsed.name}.html`),
+      jsonPath: rawOutput,
+    };
+  }
+
+  if (ext === '.html' || ext === '.htm') {
+    return {
+      htmlPath: rawOutput,
+      jsonPath: path.join(parsed.dir, `${parsed.name}.json`),
+    };
+  }
+
+  return {
+    htmlPath: rawOutput,
+    jsonPath: `${rawOutput}.json`,
+  };
+}
+
+function generateReportHtml(outputPath, bootstrapData) {
   const templatePath = path.join(__dirname, 'agentlens.html');
-  const corePath     = path.join(__dirname, 'agentlens-core.js');
 
   if (!fs.existsSync(templatePath)) {
     throw new Error(`agentlens.html not found at ${templatePath}`);
   }
 
   let html = fs.readFileSync(templatePath, 'utf8');
-
-  // Inline agentlens-core.js if it exists (makes report fully self-contained)
-  if (fs.existsSync(corePath)) {
-    const coreJs = fs.readFileSync(corePath, 'utf8');
-    html = html.replace('</head>', `<script>\n${coreJs}\n</script>\n</head>`);
-  }
-
-  // Inject preseed data
-  const seedJson = JSON.stringify(seedData);
-  html = html.replace('</head>', `<script>window.AGENTLENS_LOCAL_DATA = ${seedJson};</script>\n</head>`);
+  const bootstrapJson = serializeInlineJson(bootstrapData);
+  html = html.replace(
+    '</head>',
+    `<script id="agentlens-bootstrap" type="application/json">${bootstrapJson}</script>\n</head>`
+  );
 
   fs.writeFileSync(outputPath, html, 'utf8');
+}
+
+function writeReportJson(reportData, outputPath) {
+  fs.writeFileSync(outputPath, JSON.stringify(reportData, null, 2) + '\n', 'utf8');
 }
 
 // ══════════════════════════════════════
@@ -184,24 +237,26 @@ async function main() {
 
   printSummary(results);
 
+  const generatedAt = new Date().toISOString();
+  const reportData = buildReportData(results, baselines, generatedAt);
+
   // --stdout: print JSON and exit
   if (args.stdout) {
-    console.log(JSON.stringify({ repos: results, baselines, generatedAt: new Date().toISOString(), cliVersion: VERSION }, null, 2));
+    console.log(JSON.stringify(reportData, null, 2));
     return;
   }
 
-  // Generate HTML report
-  const seedData = {
-    repos: results,
-    baselines,
-    generatedAt: new Date().toISOString(),
-    cliVersion: VERSION,
-  };
+  const { htmlPath, jsonPath } = resolveOutputPaths(output);
+  writeReportJson(reportData, jsonPath);
+  generateReportHtml(htmlPath, {
+    kind: 'agentlens-bootstrap',
+    schemaVersion: 1,
+    defaultReportFile: path.basename(jsonPath),
+  });
+  console.error(`Report viewer written to: ${path.resolve(htmlPath)}`);
+  console.error(`Report data written to:   ${path.resolve(jsonPath)}\n`);
 
-  generateReport(seedData, output);
-  console.error(`Report written to: ${path.resolve(output)}\n`);
-
-  if (args.open) openBrowser(output);
+  if (args.open) openBrowser(htmlPath);
 }
 
 main().catch(err => {
