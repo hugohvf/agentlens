@@ -10,11 +10,12 @@ const { version: VERSION } = require('./package.json');
 // ARG PARSER
 // ══════════════════════════════════════
 function parseArgs(argv) {
-  const args = { paths: [], config: null, out: null, open: false, stdout: false, version: false };
+  const args = { paths: [], config: null, out: null, open: true, stdout: false, version: false };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--version' || a === '-v') { args.version = true; }
     else if (a === '--open')  { args.open = true; }
+    else if (a === '--no-open') { args.open = false; }
     else if (a === '--stdout'){ args.stdout = true; }
     else if ((a === '--path' || a === '-p') && argv[i + 1]) { args.paths.push(argv[++i]); }
     else if ((a === '--out'  || a === '-o') && argv[i + 1]) { args.out = argv[++i]; }
@@ -42,13 +43,14 @@ function loadConfig(configPath) {
 function resolveRepos(args) {
   // Priority 1: --path flags
   if (args.paths.length > 0) {
+    const repos = args.paths.map(p => ({
+      path: path.resolve(p),
+      name: path.basename(path.resolve(p)),
+    }));
     return {
-      repos: args.paths.map(p => ({
-        path: path.resolve(p),
-        name: path.basename(path.resolve(p)),
-      })),
+      repos,
       baselines: [],
-      output: args.out || 'agentlens-report.html',
+      output: args.out || `${repos[0].name}.html`,
     };
   }
 
@@ -68,16 +70,17 @@ function resolveRepos(args) {
       return {
         repos,
         baselines: cfg.baselines || [],
-        output: args.out || cfg.output || 'agentlens-report.html',
+        output: args.out || cfg.output || (repos.length === 1 ? `${repos[0].name}.html` : 'agentlens-report.html'),
       };
     }
   }
 
   // Priority 3: default — scan current directory
+  const folderName = path.basename(path.resolve('.'));
   return {
-    repos: [{ path: path.resolve('.'), name: path.basename(path.resolve('.')) }],
+    repos: [{ path: path.resolve('.'), name: folderName }],
     baselines: [],
-    output: args.out || 'agentlens-report.html',
+    output: args.out || `${folderName}.html`,
   };
 }
 
@@ -253,8 +256,13 @@ async function main() {
     schemaVersion: 1,
     defaultReportFile: path.basename(jsonPath),
   });
-  console.error(`Report viewer written to: ${path.resolve(htmlPath)}`);
-  console.error(`Report data written to:   ${path.resolve(jsonPath)}\n`);
+  const absHtmlPath = path.resolve(htmlPath);
+  const fileUrl = `file://${absHtmlPath}`;
+  const shortName = path.basename(htmlPath);
+  const openCmd = process.platform === 'win32' ? `start ${shortName}` : `open ${shortName}`;
+  console.error(`  Report saved: ${shortName}\n`);
+  console.error(`  To open:  ${openCmd}`);
+  console.error(`  URL:      ${fileUrl}\n`);
 
   if (args.open) openBrowser(htmlPath);
 }
