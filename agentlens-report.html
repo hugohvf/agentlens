@@ -272,12 +272,10 @@ footer{text-align:center;padding:28px 20px;color:var(--g400);font-size:.78rem}
 .compare-repo-chip.unresolved{border-color:#fca5a5;background:#fef2f2}
 .compare-repo-chip .crep-meta{font-size:.73rem;color:var(--g500);margin-top:2px}
 .compare-repo-chip .crep-name-wrap{display:flex;flex-direction:column;gap:2px}
-.warning-text{background:var(--orange-l);border-left:4px solid var(--orange);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#92400e;margin-top:12px;display:flex;align-items:flex-start;gap:8px}
-.cmp-saved-panel{margin-top:24px}
-.cmp-saved-panel h4{font-size:.85rem;font-weight:800;color:var(--g700);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
-.cmp-saved-list{display:flex;flex-direction:column;gap:10px}
+.warning-text{font-size:.78rem;color:var(--orange);margin-top:10px}
 .hidden-input{display:none}
 </style>
+<script id="agentlens-bootstrap" type="application/json">{"kind":"agentlens-bootstrap","schemaVersion":1,"defaultReportFile":"agentlens-report.json"}</script>
 </head>
 <body>
 
@@ -299,13 +297,19 @@ footer{text-align:center;padding:28px 20px;color:var(--g400);font-size:.78rem}
     <div class="action-row">
       <button class="action-btn primary" id="btn-open-folder" onclick="openReportFolder()"></button>
       <button class="action-btn" id="btn-import-report" onclick="triggerReportImport()"></button>
+      <button class="action-btn" id="btn-import-comparison" onclick="triggerComparisonImport()"></button>
+      <button class="action-btn" id="btn-export-comparison" onclick="exportComparison()"></button>
     </div>
     <div class="workspace-meta" id="local-workspace-meta"></div>
     <div class="warning-text hidden" id="local-workspace-warning"></div>
-    <div style="margin-top:18px">
+    <div class="library-grid">
       <div class="library-group">
         <h4 id="lbl-library-reports"></h4>
         <div class="library-list" id="local-reports-list"></div>
+      </div>
+      <div class="library-group">
+        <h4 id="lbl-library-comparisons"></h4>
+        <div class="library-list" id="local-comparisons-list"></div>
       </div>
     </div>
     <input class="hidden-input" id="folder-input" type="file" webkitdirectory directory multiple onchange="handleFolderSelection(event)">
@@ -488,16 +492,6 @@ footer{text-align:center;padding:28px 20px;color:var(--g400);font-size:.78rem}
   <div id="section-compare" class="hidden">
     <!-- Input card -->
     <div class="compare-card">
-      <div class="examples" style="margin-bottom:14px">
-        <span>Try:</span>
-        <span class="example-chip" onclick="addExampleToCompare('https://github.com/anthropics/anthropic-cookbook')">anthropic-cookbook</span>
-        <span class="example-chip" onclick="addExampleToCompare('https://github.com/openai/codex')">openai/codex</span>
-        <span class="example-chip" onclick="addExampleToCompare('https://github.com/microsoft/vscode')">microsoft/vscode</span>
-        <span class="example-chip" onclick="addExampleToCompare('https://github.com/withastro/astro')">withastro/astro</span>
-        <span class="example-chip" onclick="addExampleToCompare('https://github.com/getsentry/sentry')">getsentry/sentry</span>
-        <span class="example-chip" onclick="addExampleToCompare('https://github.com/facebook/react')">facebook/react</span>
-        <span class="example-chip" onclick="addExampleToCompare('https://github.com/grafana/grafana')">grafana/grafana</span>
-      </div>
       <label class="input-label" id="lbl-cmp-add"></label>
       <div class="input-row">
         <input class="repo-input" id="cmp-url" type="text" autocomplete="off" spellcheck="false" />
@@ -584,12 +578,6 @@ footer{text-align:center;padding:28px 20px;color:var(--g400);font-size:.78rem}
           <table class="compare-result-table" id="cmp-result-table"></table>
         </div>
       </div>
-    </div>
-
-    <!-- Saved comparisons panel -->
-    <div class="compare-card cmp-saved-panel">
-      <h4 id="lbl-saved-comparisons"></h4>
-      <div class="cmp-saved-list" id="cmp-saved-list"></div>
     </div>
   </div><!-- end #section-compare -->
 
@@ -695,15 +683,14 @@ const I18N = {
     cmpColTokens: 'Tokens',
     cmpNoConfigs: 'no agent configs',
     cmpScanning: 'Scanning',
-    localWorkspace: 'Local Reports',
+    localWorkspace: 'Local Reports & Comparisons',
     openFolder: 'Open Report Folder',
     importReport: 'Import Report JSON',
     importComparison: 'Import Comparison JSON',
     exportComparison: 'Export Comparison',
     libraryReports: 'Report JSON Files',
     libraryComparisons: 'Saved Comparisons',
-    savedComparisons: 'Saved Comparisons',
-    workspaceIdle: 'Open a folder or import report JSON files to work with local outputs.',
+    workspaceIdle: 'Open a folder or import report/comparison JSON files to work with local outputs.',
     workspaceLoaded: 'Local workspace ready',
     workspaceFetchWarn: 'This viewer could not auto-load its sibling report JSON. Open the folder or import the report JSON manually.',
     workspaceNoReports: 'No report JSON files loaded yet.',
@@ -848,15 +835,14 @@ const I18N = {
     cmpColTokens: 'Tokens',
     cmpNoConfigs: 'sem agent configs',
     cmpScanning: 'Escaneando',
-    localWorkspace: 'Relatórios Locais',
+    localWorkspace: 'Relatórios e Comparações Locais',
     openFolder: 'Abrir Pasta de Relatórios',
     importReport: 'Importar JSON de Relatório',
     importComparison: 'Importar JSON de Comparação',
     exportComparison: 'Exportar Comparação',
     libraryReports: 'Arquivos JSON de Relatório',
     libraryComparisons: 'Comparações Salvas',
-    savedComparisons: 'Comparações Salvas',
-    workspaceIdle: 'Abra uma pasta ou importe JSONs de relatório para trabalhar com saídas locais.',
+    workspaceIdle: 'Abra uma pasta ou importe JSONs de relatório/comparação para trabalhar com saídas locais.',
     workspaceLoaded: 'Workspace local pronto',
     workspaceFetchWarn: 'Este viewer não conseguiu carregar automaticamente o JSON vizinho. Abra a pasta ou importe o JSON do relatório manualmente.',
     workspaceNoReports: 'Nenhum JSON de relatório carregado ainda.',
@@ -938,14 +924,15 @@ function applyI18N() {
   document.getElementById('lbl-local-workspace').textContent = T('localWorkspace');
   document.getElementById('btn-open-folder').textContent = T('openFolder');
   document.getElementById('btn-import-report').textContent = T('importReport');
+  document.getElementById('btn-import-comparison').textContent = T('importComparison');
+  document.getElementById('btn-export-comparison').textContent = T('exportComparison');
   document.getElementById('lbl-library-reports').textContent = T('libraryReports');
-  document.getElementById('lbl-saved-comparisons').textContent = T('savedComparisons');
+  document.getElementById('lbl-library-comparisons').textContent = T('libraryComparisons');
   document.getElementById('lbl-cmp-add').textContent = T('orgScanLabel');
   document.getElementById('btn-cmp-add').textContent = T('cmpAddBtn');
   document.getElementById('btn-import-report-compare').textContent = T('importReport');
   document.getElementById('btn-import-comparison-compare').textContent = T('importComparison');
   document.getElementById('btn-export-comparison-compare').textContent = T('exportComparison');
-  renderSavedComparisons();
   document.getElementById('cmp-run-text').textContent = T('cmpRun');
   document.getElementById('cmp-hint').textContent = T('cmpHint');
   document.getElementById('h-cmp-chart').textContent = T('cmpChartTitle');
@@ -1133,7 +1120,6 @@ function normalizeComparisonDoc(doc,fileName){
       devs:Number(doc.settings&&doc.settings.devs)||5,
       chats:Number(doc.settings&&doc.settings.chats)||15,
     },
-    embeddedReports:(doc.embeddedReports&&typeof doc.embeddedReports==='object')?doc.embeddedReports:null,
     items:doc.items.map(normalizeComparisonItem).filter(Boolean),
     fileName:fileName||'agentlens-comparison.json',
   };
@@ -1297,10 +1283,10 @@ function setLocalWarning(message){
   LOCAL_STATE.warning=message||'';
   const el=document.getElementById('local-workspace-warning');
   if(LOCAL_STATE.warning){
-    el.innerHTML=`<span>⚠️</span><span>${esc(LOCAL_STATE.warning)}</span>`;
+    el.textContent=LOCAL_STATE.warning;
     el.classList.remove('hidden');
   }else{
-    el.innerHTML='';
+    el.textContent='';
     el.classList.add('hidden');
   }
 }
@@ -1325,7 +1311,6 @@ function registerComparisonDoc(comparison, source){
     LOCAL_STATE.comparisons.push(entry);
     LOCAL_STATE.comparisons.sort(byFileName);
   }
-  renderSavedComparisons();
   return LOCAL_STATE.comparisons.find(x=>x.fileName===comparison.fileName)||entry;
 }
 function ensureBaselinesQueued(reportEntry){
@@ -1367,6 +1352,7 @@ function resolveCompareItem(item){
 function renderLocalWorkspace(){
   const currentEntry=currentReportEntry();
   const reportList=document.getElementById('local-reports-list');
+  const comparisonList=document.getElementById('local-comparisons-list');
   updateLocalWorkspaceMeta(
     LOCAL_STATE.folderName
       ? `${T('workspaceLoaded')} · ${LOCAL_STATE.folderName}`
@@ -1395,6 +1381,13 @@ function renderLocalWorkspace(){
       </div>
     </div>`;
   }).join(''):`<div class="library-empty">${T('workspaceNoReports')}</div>`;
+  comparisonList.innerHTML=LOCAL_STATE.comparisons.length?LOCAL_STATE.comparisons.map((entry,index)=>`<div class="library-item">
+      <div class="library-file">${esc(entry.fileName)}</div>
+      <div class="library-meta">${reportSourceLabel(entry.source)} · ${entry.comparison.items.length} item(s)</div>
+      <div class="library-actions">
+        <button onclick="loadSavedComparison(${index})">${T('comparisonLoad')}</button>
+      </div>
+    </div>`).join(''):`<div class="library-empty">${T('workspaceNoComparisons')}</div>`;
 }
 function openLocalRepo(reportIndex, repoIndex){
   const entry=LOCAL_STATE.reports[reportIndex];
@@ -1437,7 +1430,6 @@ async function ingestFolderJsonFiles(files, folderName){
   setLocalWarning('');
   renderLocalWorkspace();
   renderCmpQueue();
-  renderSavedComparisons();
 }
 async function openReportFolder(){
   try{
@@ -1882,30 +1874,7 @@ function renderCmpQueue(){
   }).join('');
   document.getElementById('cmp-run-btn').disabled=COMPARE_STATE.items.length<2;
 }
-function addExampleToCompare(url){
-  const parsed=parseRepoUrl(url);
-  if(parsed)addCompareItem({ type:'github-repo', key:`${parsed.owner}/${parsed.repo}`, owner:parsed.owner, repo:parsed.repo });
-}
-// ── Saved Comparisons (in Compare tab) ──
-function renderSavedComparisons(){
-  const el=document.getElementById('cmp-saved-list');
-  if(!el)return;
-  el.innerHTML=LOCAL_STATE.comparisons.length?LOCAL_STATE.comparisons.map((entry,index)=>`<div class="library-item">
-      <div class="library-file">${esc(entry.fileName)}</div>
-      <div class="library-meta">${reportSourceLabel(entry.source)} · ${entry.comparison.items.length} item(s)</div>
-      <div class="library-actions">
-        <button onclick="loadSavedComparison(${index})">${T('comparisonLoad')}</button>
-      </div>
-    </div>`).join(''):`<div class="library-empty">${T('workspaceNoComparisons')}</div>`;
-}
 function loadComparisonDocument(comparison){
-  if(comparison.embeddedReports){
-    Object.entries(comparison.embeddedReports).forEach(([fileName,reportData])=>{
-      const report=normalizeReportDoc(reportData,fileName);
-      if(report)registerReportDoc(report,'import');
-    });
-    renderLocalWorkspace();
-  }
   COMPARE_STATE.items=comparison.items.slice();
   document.getElementById('cmp-sel-model').value=comparison.settings.modelId||'claude-sonnet-4.6';
   document.getElementById('cmp-sl-devs').value=comparison.settings.devs||5;
@@ -1948,13 +1917,6 @@ async function exportComparison(){
     showCmpStatus(T('compareNeedTwo'),'warn');
     return;
   }
-  const embeddedReports={};
-  COMPARE_STATE.items.forEach(item=>{
-    if(item.type==='report-repo'){
-      const entry=findReportEntry(item.file);
-      if(entry&&!embeddedReports[entry.fileName])embeddedReports[entry.fileName]=entry.report;
-    }
-  });
   const payload={
     kind:'agentlens-comparison',
     schemaVersion:1,
@@ -1965,12 +1927,12 @@ async function exportComparison(){
       devs:+document.getElementById('cmp-sl-devs').value,
       chats:+document.getElementById('cmp-sl-chats').value,
     },
-    embeddedReports:Object.keys(embeddedReports).length?embeddedReports:undefined,
     items:COMPARE_STATE.items.map(item=>item.type==='github-repo'
       ? { type:'github-repo', key:item.key }
       : { type:'report-repo', file:item.file, repoId:item.repoId }),
   };
   registerComparisonDoc(normalizeComparisonDoc(payload, 'agentlens-comparison.json'), 'import');
+  renderLocalWorkspace();
   await saveComparisonText('agentlens-comparison.json', JSON.stringify(payload, null, 2) + '\n');
 }
 async function runCompare(){
@@ -2353,11 +2315,9 @@ applyI18N();
 (async function initLocalWorkspace(){
   renderLocalWorkspace();
   renderCmpQueue();
-  renderSavedComparisons();
   await loadBootstrapReport();
   renderLocalWorkspace();
   renderCmpQueue();
-  renderSavedComparisons();
 })();
 </script>
 </body>
