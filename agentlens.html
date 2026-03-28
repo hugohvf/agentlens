@@ -346,15 +346,63 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
 .cmp-saved-panel h4{font-size:.82rem;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
 .cmp-saved-list{display:flex;flex-direction:column;gap:10px}
 .hidden-input{display:none}
+/* COPY & TRANSLATE */
+.icon-btn{background:none;border:1px solid transparent;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:.8rem;color:var(--g500);transition:.15s;line-height:1;font-family:'Space Grotesk',sans-serif}
+.icon-btn:hover{border-color:var(--card-border);background:var(--card-alt);color:var(--g900)}
+.icon-btn.copied{color:var(--green)!important}
+.translate-panel{border-bottom:1px solid var(--card-border);padding:10px 18px;background:rgba(37,71,244,.05);display:none}
+.translate-panel.open{display:block}
+.translate-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.translate-controls select{padding:4px 10px;border:1px solid var(--card-border);border-radius:6px;background:var(--card-alt);color:var(--g900);font-size:.8rem;font-family:'Space Grotesk',sans-serif;cursor:pointer;outline:none}
+.translate-controls .t-run-btn{padding:4px 14px;border-radius:6px;border:none;background:var(--blue);color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:.15s}
+.translate-controls .t-run-btn:hover{opacity:.85}.translate-controls .t-run-btn:disabled{opacity:.5;cursor:not-allowed}
+.translate-controls .t-close-btn{background:none;border:1px solid var(--card-border);border-radius:6px;padding:3px 8px;font-size:.8rem;color:var(--g500);cursor:pointer;transition:.15s}
+.translate-controls .t-close-btn:hover{color:var(--g900);border-color:var(--g500)}
+.translate-result{margin-top:10px;padding:10px 14px;background:var(--card);border:1px solid var(--card-border);border-radius:8px;font-size:.84rem;color:var(--g700);line-height:1.7;white-space:pre-wrap;word-break:break-word;display:none}
+.translate-result.show{display:block}
+.translate-status{font-size:.78rem;color:var(--g500);margin-top:6px;font-style:italic;display:none}
+.translate-status.show{display:block}
+/* API KEYS MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-backdrop.open{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:28px;width:min(460px,100%);box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.modal-box h3{font-size:1rem;font-weight:800;color:var(--g900);margin-bottom:6px}
+.modal-sub{font-size:.8rem;color:var(--g500);margin-bottom:20px;line-height:1.6}
+.modal-field{margin-bottom:14px}
+.modal-field label{display:block;font-size:.74rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.modal-field input{width:100%;padding:9px 12px;border:1px solid var(--card-border);border-radius:8px;font-size:.84rem;background:var(--card-alt);color:var(--g900);font-family:monospace;outline:none;transition:.2s;box-sizing:border-box}
+.modal-field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,71,244,.15)}
+.modal-actions{display:flex;gap:10px;margin-top:22px;justify-content:flex-end}
+.modal-actions button{padding:8px 20px;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:.15s}
+.modal-save-btn{background:var(--blue);color:#fff;border:none}.modal-save-btn:hover{opacity:.85}
+.modal-cancel-btn{background:none;border:1px solid var(--card-border);color:var(--g700)}.modal-cancel-btn:hover{border-color:rgba(37,71,244,.4);color:var(--cyan)}
+.settings-btn{position:absolute;top:16px;left:16px;background:var(--toggle-bg);border:1px solid var(--hero-border);border-radius:8px;padding:6px 10px;font-size:.82rem;cursor:pointer;color:rgba(255,255,255,.65);transition:.15s;line-height:1}
+.settings-btn:hover{border-color:rgba(255,255,255,.35);color:#fff}
 </style>
 </head>
 <body>
+
+<!-- API KEYS MODAL -->
+<div class="modal-backdrop" id="api-keys-modal" onclick="if(event.target===this)closeApiKeysModal()">
+  <div class="modal-box">
+    <h3>🔑 API Keys for Translation</h3>
+    <p class="modal-sub">Keys are stored only in your browser's localStorage and are sent directly to the respective API. Leave blank to remove a key.</p>
+    <div class="modal-field"><label>Anthropic (Claude)</label><input id="ak-anthropic" type="password" placeholder="sk-ant-..." autocomplete="off" /></div>
+    <div class="modal-field"><label>OpenAI (GPT)</label><input id="ak-openai" type="password" placeholder="sk-..." autocomplete="off" /></div>
+    <div class="modal-field"><label>Google Gemini</label><input id="ak-gemini" type="password" placeholder="AIza..." autocomplete="off" /></div>
+    <div class="modal-actions">
+      <button class="modal-cancel-btn" onclick="closeApiKeysModal()">Cancel</button>
+      <button class="modal-save-btn" onclick="saveApiKeys()">Save Keys</button>
+    </div>
+  </div>
+</div>
 
 <div class="hero">
   <div class="lang-toggle">
     <button class="lang-btn" onclick="setLang('en')">EN</button>
     <button class="lang-btn active" onclick="setLang('pt')">PT</button>
   </div>
+  <button class="settings-btn" onclick="showApiKeysModal()" title="API Keys">🔑</button>
   <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   <h1><span>Agent</span>Lens</h1>
   <p id="hero-sub"></p>
@@ -1247,8 +1295,8 @@ function showStatus(m,t='loading'){const i={loading:'<div class="spinner"></div>
 function clearStatus(){document.getElementById('status-area').innerHTML=''}
 function showPanel(id,btn){document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById(id).classList.add('active');if(id==='panel-cost')recalcCost()}
 function switchTab(btn,tabId,blockId){const bl=document.getElementById(blockId);bl.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));bl.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));btn.classList.add('active');bl.querySelector('#'+tabId).classList.add('active')}
-function toggleRef(el){el.nextElementSibling.classList.toggle('open')}
-function toggleAgentFile(el){el.nextElementSibling.classList.toggle('open')}
+function toggleRef(el){el.parentElement.querySelector('.ref-content').classList.toggle('open')}
+function toggleAgentFile(el){el.parentElement.querySelector('.agent-file-body').classList.toggle('open')}
 
 // ══════════════════════════════════════
 // CORE REPO ANALYZER (reusable, no DOM)
@@ -2205,16 +2253,25 @@ function renderDetection(foundByTool,uniqueRefs,branch){
   // Agent file viewers
   document.getElementById('agent-files-pill').textContent=`${foundTools.length} ${T('found')}`;
   document.getElementById('agent-files-list').innerHTML=foundTools.map((tool,i)=>{const{path,content}=foundByTool[tool.id];const tk=estimateTokens(content);const bid=`ab-${i}`,rid=`ar-${i}`,wid=`aw-${i}`;
-    return`<div class="agent-file-block" id="${bid}"><div class="agent-file-header" onclick="toggleAgentFile(this)"><div class="agent-file-title"><span style="font-size:1.2rem">${tool.icon}</span><span class="file-badge">${path}</span><span style="color:var(--g500);font-size:.8rem">${tool.name}</span></div><div style="display:flex;align-items:center;gap:7px"><span class="token-badge">~${fmtTok(tk)} tok</span><span style="color:var(--g400)">▾</span></div></div><div class="agent-file-body"><div class="tab-bar"><button class="tab-btn active" onclick="switchTab(this,'${rid}','${bid}')">${T('rendered')}</button><button class="tab-btn" onclick="switchTab(this,'${wid}','${bid}')">${T('raw')}</button></div><div class="tab-content active" id="${rid}"><div class="md-body">${renderMd(content)}</div></div><div class="tab-content" id="${wid}"><div class="raw-code">${content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div></div></div>`}).join('');
+    FILE_CONTENTS[bid]=content;
+    const hasKey=hasApiKey();
+    const tBtn=hasKey?`<button class="icon-btn" onclick="event.stopPropagation();toggleTranslatePanel('${bid}')" title="Translate">🌐</button>`:'';
+    const tPanel=hasKey?`<div class="translate-panel" id="tp-${bid}"><div class="translate-controls"><select id="td-${bid}"><option value="en">PT → EN</option><option value="pt">EN → PT</option></select><button class="t-run-btn" onclick="runTranslate('${bid}')">Translate</button><button class="t-close-btn" onclick="toggleTranslatePanel('${bid}')">✕</button></div><div class="translate-result" id="tr-${bid}"></div><div class="translate-status" id="ts-${bid}"></div></div>`:'';
+    return`<div class="agent-file-block" id="${bid}"><div class="agent-file-header" onclick="toggleAgentFile(this)"><div class="agent-file-title"><span style="font-size:1.2rem">${tool.icon}</span><span class="file-badge">${path}</span><span style="color:var(--g500);font-size:.8rem">${tool.name}</span></div><div style="display:flex;align-items:center;gap:7px"><span class="token-badge">~${fmtTok(tk)} tok</span>${tBtn}<button class="icon-btn copy-btn" onclick="event.stopPropagation();copyBlock('${bid}')" title="Copy">📋</button><span style="color:var(--g400)">▾</span></div></div>${tPanel}<div class="agent-file-body"><div class="tab-bar"><button class="tab-btn active" onclick="switchTab(this,'${rid}','${bid}')">${T('rendered')}</button><button class="tab-btn" onclick="switchTab(this,'${wid}','${bid}')">${T('raw')}</button></div><div class="tab-content active" id="${rid}"><div class="md-body">${renderMd(content)}</div></div><div class="tab-content" id="${wid}"><div class="raw-code">${content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div></div></div>`}).join('');
 
   // Refs
   const missingRefs=uniqueRefs.filter(r=>!r.found);
   document.getElementById('refs-count-pill').textContent=`${foundRefs.length} ${T('resolved')} · ${missingRefs.length} ${T('missing')}`;
   if(!uniqueRefs.length){document.getElementById('refs-grid').innerHTML=`<div class="empty-state" style="padding:36px;background:var(--card);border:1px solid var(--card-border);border-radius:12px"><div class="icon">🔍</div><h3>${T('noRefs')}</h3><p>${T('noRefsP')}</p></div>`;return}
-  document.getElementById('refs-grid').innerHTML=uniqueRefs.map(ref=>{const isShared=ref.fromTools.size>1;
+  document.getElementById('refs-grid').innerHTML=uniqueRefs.map((ref,ri)=>{const isShared=ref.fromTools.size>1;const rfid=`rc-${ri}`;
+    if(ref.found&&ref.content)FILE_CONTENTS[rfid]=ref.content;
+    const hasKey=hasApiKey();
     const tags=[ref.found?`<span class="ref-tag found">✓</span>`:`<span class="ref-tag missing">✗</span>`,`<span class="ref-tag type">${ref.type}</span>`,isShared?`<span class="ref-tag shared">${T('shared')} ×${ref.fromTools.size}</span>`:'',ref.found?`<span class="token-badge">~${fmtTok(ref.tokens)} tok</span>`:'',...[...ref.fromTools].map(tid=>{const tt=AGENT_TOOLS.find(x=>x.id===tid);return tt?`<span class="t-tool" ${toolPill(tid)}>${tt.icon}</span>`:''})].join('');
     const cnt=ref.found?(/\.(md|mdx)$/.test(ref.path)?`<div class="md-body">${renderMd(ref.content)}</div>`:`<div class="raw-code">${ref.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`):`<p style="color:var(--red);font-style:italic;padding:6px 0">${T('missing')} (${branch})</p>`;
-    return`<div class="ref-card ${!ref.found?'not-found':''}"><div class="ref-card-header" onclick="toggleRef(this)"><span class="ref-path">${ref.path}</span><div class="ref-meta">${tags}<span style="color:var(--g400)">▾</span></div></div><div class="ref-content">${cnt}</div></div>`}).join('');
+    const copyBtn=ref.found?`<button class="icon-btn copy-btn" onclick="event.stopPropagation();copyBlock('${rfid}')" title="Copy">📋</button>`:'';
+    const tBtn=hasKey&&ref.found?`<button class="icon-btn" onclick="event.stopPropagation();toggleTranslatePanel('${rfid}')" title="Translate">🌐</button>`:'';
+    const tPanel=hasKey&&ref.found?`<div class="translate-panel" id="tp-${rfid}"><div class="translate-controls"><select id="td-${rfid}"><option value="en">PT → EN</option><option value="pt">EN → PT</option></select><button class="t-run-btn" onclick="runTranslate('${rfid}')">Translate</button><button class="t-close-btn" onclick="toggleTranslatePanel('${rfid}')">✕</button></div><div class="translate-result" id="tr-${rfid}"></div><div class="translate-status" id="ts-${rfid}"></div></div>`:'';
+    return`<div class="ref-card ${!ref.found?'not-found':''}" id="${rfid}"><div class="ref-card-header" onclick="toggleRef(this)"><span class="ref-path">${ref.path}</span><div class="ref-meta">${tags}${copyBtn}${tBtn}<span style="color:var(--g400)">▾</span></div></div>${tPanel}<div class="ref-content">${cnt}</div></div>`}).join('');
 
   // Render Context Health
   renderHealth(foundByTool, uniqueRefs);
@@ -2412,6 +2469,123 @@ function recalcCost(){
 function sortTable(col){
   if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=col===0?1:-1}
   recalcCost();
+}
+
+// ══════════════════════════════════════
+// COPY & TRANSLATE
+// ══════════════════════════════════════
+const FILE_CONTENTS = {};
+
+function getApiKeys() {
+  return {
+    anthropic: localStorage.getItem('al-anthropic-key') || '',
+    openai: localStorage.getItem('al-openai-key') || '',
+    gemini: localStorage.getItem('al-gemini-key') || '',
+  };
+}
+function hasApiKey() {
+  const k = getApiKeys(); return !!(k.anthropic || k.openai || k.gemini);
+}
+
+function showApiKeysModal() {
+  const k = getApiKeys();
+  document.getElementById('ak-anthropic').value = k.anthropic;
+  document.getElementById('ak-openai').value = k.openai;
+  document.getElementById('ak-gemini').value = k.gemini;
+  document.getElementById('api-keys-modal').classList.add('open');
+}
+function closeApiKeysModal() {
+  document.getElementById('api-keys-modal').classList.remove('open');
+}
+function saveApiKeys() {
+  const ak = document.getElementById('ak-anthropic').value.trim();
+  const ok = document.getElementById('ak-openai').value.trim();
+  const gk = document.getElementById('ak-gemini').value.trim();
+  if (ak) localStorage.setItem('al-anthropic-key', ak); else localStorage.removeItem('al-anthropic-key');
+  if (ok) localStorage.setItem('al-openai-key', ok); else localStorage.removeItem('al-openai-key');
+  if (gk) localStorage.setItem('al-gemini-key', gk); else localStorage.removeItem('al-gemini-key');
+  closeApiKeysModal();
+  // Re-render to show/hide translate buttons
+  const repo = currentLocalRepo();
+  if (repo) renderDetection(repo.foundByTool || {}, repo.uniqueRefs || [], repo.repoName || '');
+}
+
+function copyBlock(blockId) {
+  const text = FILE_CONTENTS[blockId] || '';
+  const btn = document.querySelector('#' + blockId + ' .copy-btn');
+  const finish = () => { if (btn) { btn.textContent = '✓'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 1500); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(finish).catch(() => { fallbackCopy(text); finish(); });
+  } else { fallbackCopy(text); finish(); }
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea'); ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
+  ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+}
+
+function toggleTranslatePanel(blockId) {
+  const panel = document.getElementById('tp-' + blockId);
+  if (panel) panel.classList.toggle('open');
+}
+
+async function runTranslate(blockId) {
+  const text = FILE_CONTENTS[blockId] || '';
+  if (!text.trim()) return;
+  const dir = document.getElementById('td-' + blockId).value;
+  const result = document.getElementById('tr-' + blockId);
+  const status = document.getElementById('ts-' + blockId);
+  const btn = document.querySelector('#tp-' + blockId + ' .t-run-btn');
+
+  result.classList.remove('show'); result.textContent = '';
+  status.textContent = '⏳ Translating…'; status.classList.add('show');
+  if (btn) btn.disabled = true;
+
+  const prompt = dir === 'en'
+    ? 'Translate the following from Portuguese to English. Preserve all formatting, code blocks, lists, and technical terms exactly. Return only the translated content, no preamble.\n\n' + text
+    : 'Translate the following from English to Portuguese. Preserve all formatting, code blocks, lists, and technical terms exactly. Return only the translated content, no preamble.\n\n' + text;
+
+  try {
+    const translated = await callTranslationApi(prompt);
+    result.textContent = translated; result.classList.add('show');
+    status.classList.remove('show');
+  } catch (e) {
+    status.textContent = '❌ ' + (e.message || 'Translation failed');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function callTranslationApi(prompt) {
+  const k = getApiKeys();
+  if (k.anthropic) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': k.anthropic, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4096, messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error('Anthropic ' + res.status + (e.error ? ': ' + e.error.message : '')); }
+    const data = await res.json(); return data.content[0].text;
+  }
+  if (k.openai) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k.openai },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error('OpenAI ' + res.status + (e.error ? ': ' + e.error.message : '')); }
+    const data = await res.json(); return data.choices[0].message.content;
+  }
+  if (k.gemini) {
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + k.gemini, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error('Gemini ' + res.status + (e.error ? ': ' + e.error.message : '')); }
+    const data = await res.json(); return data.candidates[0].content.parts[0].text;
+  }
+  throw new Error('No API key configured — click 🔑 in the header to add one');
 }
 
 // ══════════════════════════════════════
