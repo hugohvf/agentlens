@@ -1,169 +1,101 @@
-# AgentLens — AI Context Cost Scanner
+# AgentLens
 
-**AgentLens** scans repositories for AI agent configuration files (`CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `copilot-instructions.md`, and more), resolves every referenced file, and calculates the real token cost per request across all major LLM providers.
+Scan de repositórios para custos de contexto de agentes de IA. Detecta `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `copilot-instructions.md` e calcula custos de tokens para os principais LLMs.
 
-Works as a **web app** (public GitHub repos) and a **CLI** (local/private repos) — same UI either way.
+Funciona de três formas — escolha a que se encaixa no seu fluxo.
 
 ---
 
-## Web App
+## App (HTML)
 
-Zero-install. Download `agentlens.html`, open in any browser, paste a GitHub URL.
+Zero instalação. Baixe `agentlens.html`, abra no browser.
+
+- Analisa repositórios públicos do GitHub via API
+- Carrega relatórios `.json` gerados pelo CLI
+- Toggle de idioma PT/EN
+- Aba Compare para comparar múltiplos repos
 
 ```
-1. Download agentlens.html
-2. Open in Chrome, Firefox, Safari, or Edge
-3. Paste: https://github.com/owner/repo
-4. Click Analyze
+1. Baixe agentlens.html
+2. Abra no Chrome, Firefox, Safari ou Edge
+3. Cole: https://github.com/owner/repo → Analisar
 ```
 
 All processing happens in your browser via the GitHub public API.
 
 ---
 
-## CLI — Scan Local & Private Repos
+## CLI
 
-Scan any local repository and get the same interactive HTML report — no GitHub API, no internet required for the scan.
-
-### Requirements
-
-- Node.js ≥ 18
-
-### Install
+Analisa repositórios locais e gera relatório HTML + JSON.
 
 ```bash
-npm install -g @hugofusinato/agentlens
-```
-
-This package publishes as `@hugofusinato/agentlens`, while the installed CLI command remains `agentlens` via the `bin` field in `package.json`.
-
-Before publishing, use one of these local equivalents:
-
-```bash
-# From this repo
-npm exec --yes --package . agentlens -- --version
-
-# Or install the local checkout globally for development
-npm link
-agentlens --version
-```
-
-After `npm publish`, this works from anywhere:
-
-```bash
+# Com npx (sem instalação)
 npx @hugofusinato/agentlens
+npx @hugofusinato/agentlens /caminho/do/repo
+npx @hugofusinato/agentlens --path . --path ../outro-repo
+
+# Ou instale globalmente
+npm install -g @hugofusinato/agentlens
+agentlens /caminho/do/repo
+
+# Opções úteis
+agentlens --stdout          # JSON no stdout
+agentlens --no-open         # não abre browser automaticamente
+agentlens --out meu-repo    # nome do arquivo de saída
 ```
 
-### Usage
+Gera `agentlens-report.html` e `agentlens-report.json` no diretório atual.
+
+---
+
+## Servidor com histórico
+
+API REST HTTP que analisa repositórios e persiste os resultados em banco de dados SQLite local.
 
 ```bash
-# Scan current directory
-agentlens
-
-# Scan a specific path
-agentlens /path/to/my-repo
-
-# Scan multiple repos at once
-agentlens --path . --path ../other-service
-
-# Custom output file
-agentlens --out report.html
-
-# Open in browser immediately after generating
-agentlens --open
-
-# Print report JSON to stdout (no HTML)
-agentlens --stdout
-
-# Use a config file (see .agentlens.json below)
-agentlens --config .agentlens.json
-
-# Version
-agentlens --version
+npm install
+node server.js              # porta 3000 (padrão)
+PORT=8080 node server.js    # porta customizada
 ```
 
-The CLI now generates two sibling files:
+### Endpoints
 
-- `agentlens-report.html` — the viewer shell
-- `agentlens-report.json` — the local report data source
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/analyze` | `{ "path": "/caminho/repo" }` — analisa e salva |
+| `GET` | `/history` | Lista todas as análises salvas |
+| `GET` | `/history/:id` | Análise completa por ID |
+| `DELETE` | `/history/:id` | Remove uma análise |
 
-The HTML viewer loads its sibling JSON when possible, can discover other report/comparison JSON files in the same folder, and can export/import saved comparisons. You can still add public GitHub repos in the Compare tab for baseline comparison — those are fetched live from your browser.
+O app HTML pode ser apontado para `GET /history` para exibir o histórico de análises salvas.
 
-### `.agentlens.json` — Workspace Config
+O banco de dados fica em `agentlens-history.db` no diretório de trabalho. Cada análise salva a versão do CLI (`cliVersion`) para rastrear compatibilidade entre versões.
 
-Place this file in your repo root to define which paths to scan and which public repos to use as baselines:
+---
+
+## Testes
+
+```bash
+npm test
+```
+
+Roda testes unitários do core e testes de integração da API com `node:test` nativo (Node.js ≥ 18, sem dependências extras).
+
+---
+
+## Config (opcional)
+
+Crie `.agentlens.json` para definir múltiplos repos de uma vez:
 
 ```json
 {
   "repos": [
-    { "path": ".", "name": "My App" },
-    { "path": "../other-service", "name": "Other Service" }
+    { "path": ".", "name": "meu-repo" },
+    { "path": "../outro-repo" }
   ],
-  "baselines": [
-    "anthropics/anthropic-cookbook",
-    "openai/openai-agents-python"
-  ],
-  "output": "agentlens-report.html"
+  "output": "relatorio.html"
 }
 ```
 
-Run `agentlens` with no flags in the same directory — it picks up the config automatically.
-
-- `repos` — local paths to scan (resolved relative to the config file). Defaults to `[{ "path": "." }]` if omitted.
-- `baselines` — public GitHub repos pre-loaded in the Compare tab as baseline references (fetched live in the browser).
-- `output` — output file name. Defaults to `agentlens-report.html`.
-
-See `.agentlens.example.json` for a full example.
-
----
-
-## What It Detects
-
-| Tool | Files |
-|---|---|
-| Claude Code | `CLAUDE.md`, `CLAUDE.local.md` |
-| OpenAI Codex | `AGENTS.md` |
-| Cursor | `.cursorrules`, `.cursor/rules/` |
-| GitHub Copilot | `.github/copilot-instructions.md` |
-| Windsurf | `.windsurfrules` |
-| Aider | `CONVENTIONS.md`, `.aider.conf.yml` |
-| Devin | `.devin/instructions.md`, `DEVIN.md` |
-
-For each file found, AgentLens also resolves referenced files (`@import`, `!include`, markdown links, inline code paths) and counts their tokens — with deduplication across tools that reference the same file.
-
-## Features
-
-| Feature | Description |
-|---|---|
-| Local repo scanning | CLI reads filesystem directly — no GitHub API needed for private repos |
-| Config file detection | 7 tools, 15+ file patterns |
-| Reference resolution | Follows `@import`, `!include`, markdown links, inline code paths |
-| Dedup logic | Shared references across multiple config files counted only once |
-| Cost calculator | 20+ models across Anthropic, OpenAI, Google, Cursor, DeepSeek, Mistral, xAI |
-| Team projection | Monthly cost = per-request × team size × daily chats × 22 working days |
-| Compare mode | Side-by-side comparison of multiple repos with chart + sortable table |
-| Baseline repos | Pre-seed the Compare tab with public repos from `.agentlens.json` |
-| Bilingual UI | English / Portuguese toggle |
-
-## Context Engineering
-
-This tool was built as a companion to a course on **Context Engineering** — the practice of intentionally designing what AI agents load into their context window to balance capability, cost, and performance.
-
-Key insight: `CLAUDE.md`, `AGENTS.md`, and similar files are loaded on **every single request**. A 10,000-token instruction file used by a 10-person team making 20 requests/day costs ~$50–300/month depending on the model — before any actual work happens.
-
-AgentLens makes that cost visible so teams can make informed decisions about what belongs in always-on context vs. skills, rules, or on-demand retrieval.
-
-## Files
-
-```
-agentlens/
-├── agentlens.html              # Web app + HTML report template (standalone)
-├── agentlens-core.js           # Shared analysis module (browser + Node.js)
-├── cli.js                      # CLI entry point
-├── package.json
-└── .agentlens.example.json     # Example workspace config
-```
-
-## License
-
-MIT
+Veja `.agentlens.example.json` para referência completa.
