@@ -52,8 +52,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && parts[0] === 'history' && parts[1]) {
       const row = db.getAnalysis(Number(parts[1]));
       if (!row) return send(res, 404, { error: 'análise não encontrada' });
-      const { result_json, ...rest } = row;
-      return send(res, 200, rest);
+      return send(res, 200, row);
     }
 
     if (req.method === 'DELETE' && parts[0] === 'history' && parts[1]) {

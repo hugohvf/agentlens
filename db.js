@@ -40,7 +40,8 @@ function listAnalyses() {
 function getAnalysis(id) {
   const row = getDb().prepare('SELECT * FROM analyses WHERE id = ?').get(id);
   if (!row) return null;
-  return { ...row, result: JSON.parse(row.result_json) };
+  const { result_json, ...rest } = row;
+  return { ...rest, result: JSON.parse(result_json) };
 }
 
 function deleteAnalysis(id) {
