@@ -247,11 +247,55 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
 .local-repo-tab.active{border-color:var(--blue);background:var(--blue-l)}
 .local-repo-tab .lrt-name{font-family:monospace;font-weight:700;font-size:.88rem;color:var(--g900)}
 .local-repo-tab .lrt-tok{font-size:.76rem;color:var(--g500);font-weight:600}
-/* MODE TABS */
-.mode-tabs{display:flex;gap:0;margin-bottom:20px;background:var(--card);border:1px solid var(--card-border);border-radius:12px;overflow:hidden}
-.mode-tab{flex:1;padding:12px;text-align:center;font-weight:700;font-size:.9rem;cursor:pointer;border:none;background:none;color:var(--g500);transition:.2s;border-bottom:2px solid transparent;font-family:'Space Grotesk',sans-serif}
-.mode-tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
-.mode-tab:hover:not(.active){color:var(--g700);background:rgba(255,255,255,.03)}
+/* AREA NAV */
+.area-nav{display:flex;gap:0;margin-bottom:20px;background:var(--card);border:1px solid var(--card-border);border-radius:12px;overflow:hidden}
+.area-tab{flex:1;padding:13px 8px;text-align:center;font-weight:700;font-size:.88rem;cursor:pointer;border:none;background:none;color:var(--g500);transition:.2s;border-bottom:2px solid transparent;font-family:'Space Grotesk',sans-serif;white-space:nowrap}
+.area-tab.active{color:var(--cyan);border-bottom-color:var(--cyan);background:rgba(34,211,238,.04)}
+.area-tab:hover:not(.active){color:var(--g700);background:rgba(255,255,255,.03)}
+/* RESULT HEADER */
+.result-header{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:18px 22px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.rh-name{font-size:1rem;font-weight:800;color:var(--g900);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rh-tokens{font-family:monospace;font-size:1.1rem;font-weight:800;color:var(--cyan);white-space:nowrap}
+.health-badge{border-radius:99px;padding:3px 12px;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.health-badge.ok{background:var(--green-l);color:var(--green)}
+.health-badge.warn{background:var(--yellow-l);color:var(--orange)}
+.health-badge.max{background:var(--red-l);color:var(--red)}
+.rh-actions{display:flex;gap:7px;flex-shrink:0}
+/* COVERAGE MATRIX */
+.coverage-matrix{background:var(--card);border:1px solid var(--card-border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.coverage-matrix-title{padding:12px 18px;background:var(--card-alt);border-bottom:1px solid var(--card-border);font-size:.8rem;font-weight:800;color:var(--g700);text-transform:uppercase;letter-spacing:.05em}
+.coverage-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.coverage-table th{padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:var(--g500);border-bottom:1px solid var(--card-border);white-space:nowrap;background:var(--card-alt)}
+.coverage-table th:first-child{text-align:left;min-width:120px}
+.coverage-table td{padding:9px 14px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04)}
+.coverage-table td:first-child{text-align:left;font-family:monospace;font-weight:700;font-size:.82rem;color:var(--g900)}
+.coverage-dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+/* SCENARIO CARDS */
+.scenario-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:640px){.scenario-cards{grid-template-columns:1fr}}
+.scenario-card{background:var(--card-alt);border:2px solid var(--card-border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:.2s;text-align:center}
+.scenario-card:hover{border-color:rgba(37,71,244,.4);background:var(--blue-l)}
+.scenario-card.active{border-color:var(--blue);background:var(--blue-l)}
+.scenario-name{font-size:.78rem;font-weight:800;color:var(--g700);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.scenario-desc{font-size:.74rem;color:var(--g500);margin-bottom:8px}
+.scenario-cost{font-size:1.1rem;font-weight:800;color:var(--blue);line-height:1}
+.scenario-cost-label{font-size:.68rem;color:var(--g400);margin-top:2px}
+/* SNAPSHOT TIMELINE */
+.snapshot-timeline{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:20px 22px}
+.snapshot-timeline-title{font-size:.82rem;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.snapshot-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed var(--g200)}
+.snapshot-row:last-child{border-bottom:none}
+.snapshot-date{font-size:.76rem;color:var(--g500);white-space:nowrap;min-width:130px}
+.snapshot-repo{font-family:monospace;font-weight:700;font-size:.84rem;color:var(--cyan);flex:1}
+.snapshot-tok{font-family:monospace;font-size:.84rem;font-weight:700;color:var(--g900);white-space:nowrap}
+.snapshot-delta{border-radius:99px;padding:1px 8px;font-size:.7rem;font-weight:700;white-space:nowrap}
+.snapshot-delta.up{background:var(--red-l);color:var(--red)}
+.snapshot-delta.down{background:var(--green-l);color:var(--green)}
+.snapshot-delta.same{background:var(--g200);color:var(--g500)}
+/* SCATTER SECTION */
+.scatter-section{margin-bottom:18px}
+/* ORG AREA CARD */
+.org-area-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:24px 28px;margin-top:20px;margin-bottom:16px}
 /* COMPARE SECTION */
 .compare-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:24px 28px;margin-bottom:20px}
 .compare-queue{display:flex;flex-direction:column;gap:8px;margin-top:14px}
@@ -446,33 +490,16 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
   <!-- LOCAL MODE BANNER (shown when opened from CLI) -->
   <div id="local-banner" class="local-banner hidden" style="margin-top:20px"></div>
 
-  <div id="local-workspace" class="compare-card" style="margin-top:20px">
-    <label class="input-label" id="lbl-local-workspace"></label>
-    <div class="action-row">
-      <button class="action-btn primary" id="btn-open-folder" onclick="openReportFolder()"></button>
-      <button class="action-btn" id="btn-import-report" onclick="triggerReportImport()"></button>
-    </div>
-    <div class="workspace-meta" id="local-workspace-meta"></div>
-    <div class="warning-text hidden" id="local-workspace-warning"></div>
-    <div style="margin-top:18px">
-      <div class="library-group">
-        <h4 id="lbl-library-reports"></h4>
-        <div class="library-list" id="local-reports-list"></div>
-      </div>
-    </div>
-    <input class="hidden-input" id="folder-input" type="file" webkitdirectory directory multiple onchange="handleFolderSelection(event)">
-    <input class="hidden-input" id="report-input" type="file" accept="application/json,.json" multiple onchange="handleReportImport(event)">
-    <input class="hidden-input" id="comparison-input" type="file" accept="application/json,.json" onchange="handleComparisonImport(event)">
+  <!-- 4-AREA NAV -->
+  <div class="area-nav" style="margin-top:20px">
+    <button class="area-tab active" onclick="setArea('analyze')" id="area-tab-analyze"></button>
+    <button class="area-tab" onclick="setArea('compare')" id="area-tab-compare"></button>
+    <button class="area-tab" onclick="setArea('org')" id="area-tab-org"></button>
+    <button class="area-tab" onclick="setArea('reports')" id="area-tab-reports"></button>
   </div>
 
-  <!-- MODE SWITCHER -->
-  <div class="mode-tabs" style="margin-top:20px">
-    <button class="mode-tab active" onclick="setMode('analyze')" id="mode-tab-analyze"></button>
-    <button class="mode-tab" onclick="setMode('compare')" id="mode-tab-compare"></button>
-  </div>
-
-  <!-- ANALYZE SECTION -->
-  <div id="section-analyze">
+  <!-- ANALYZE AREA -->
+  <div id="area-analyze">
   <div class="input-section">
     <label class="input-label" for="repo-url" id="lbl-repo"></label>
     <div class="input-row">
@@ -495,6 +522,7 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
   </div>
 
   <div id="status-area"></div>
+  <div id="result-header" class="hidden"></div>
 
   <div id="results" class="hidden">
     <!-- MAIN TABS -->
@@ -505,6 +533,7 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
 
     <!-- DETECTION PANEL -->
     <div class="tab-panel active" id="panel-detect">
+      <div id="coverage-matrix" class="coverage-matrix hidden"></div>
       <div class="stats-bar" id="stats-bar"></div>
       <div id="savings-banner" class="savings-banner hidden"></div>
       <!-- CONTEXT HEALTH -->
@@ -530,6 +559,28 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
 
     <!-- COST PANEL -->
     <div class="tab-panel" id="panel-cost">
+
+      <!-- Scenario Cards -->
+      <div class="scenario-cards" id="scenario-cards" style="margin-bottom:18px">
+        <div class="scenario-card" id="sc-solo" onclick="applyScenario(1,10,this)">
+          <div class="scenario-name" id="sc-solo-name"></div>
+          <div class="scenario-desc" id="sc-solo-desc"></div>
+          <div class="scenario-cost" id="sc-solo-cost">—</div>
+          <div class="scenario-cost-label" id="sc-solo-lbl"></div>
+        </div>
+        <div class="scenario-card active" id="sc-team" onclick="applyScenario(5,15,this)">
+          <div class="scenario-name" id="sc-team-name"></div>
+          <div class="scenario-desc" id="sc-team-desc"></div>
+          <div class="scenario-cost" id="sc-team-cost">—</div>
+          <div class="scenario-cost-label" id="sc-team-lbl"></div>
+        </div>
+        <div class="scenario-card" id="sc-large" onclick="applyScenario(20,30,this)">
+          <div class="scenario-name" id="sc-large-name"></div>
+          <div class="scenario-desc" id="sc-large-desc"></div>
+          <div class="scenario-cost" id="sc-large-cost">—</div>
+          <div class="scenario-cost-label" id="sc-large-lbl"></div>
+        </div>
+      </div>
 
       <!-- Controls -->
       <div class="cost-section">
@@ -634,12 +685,11 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
     <h3 id="empty-h"></h3>
     <p id="empty-p"></p>
   </div>
-  </div><!-- end #section-analyze -->
+  </div><!-- end #area-analyze -->
 
-  <!-- COMPARE SECTION -->
-  <div id="section-compare" class="hidden">
-    <!-- Input card -->
-    <div class="compare-card">
+  <!-- COMPARE AREA -->
+  <div id="area-compare" class="hidden">
+    <div class="compare-card" style="margin-top:20px">
       <div class="examples" style="margin-bottom:14px">
         <span>Try:</span>
         <span class="example-chip" onclick="addExampleToCompare('https://github.com/anthropics/anthropic-cookbook')">anthropic-cookbook</span>
@@ -674,11 +724,13 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
     <!-- Compare status -->
     <div id="cmp-status-area"></div>
 
-    <!-- Org Scan Panel -->
-    <div id="org-scan-panel" class="hidden"></div>
-
     <!-- Compare results -->
     <div id="cmp-results" class="hidden">
+      <!-- Scatter plot -->
+      <div class="cost-section scatter-section" id="scatter-section" style="display:none">
+        <h3 id="h-scatter-chart"></h3>
+        <div class="chart-box" style="height:260px"><canvas id="chart-compare-scatter"></canvas></div>
+      </div>
       <!-- Context bar chart -->
       <div class="cost-section">
         <h3 id="h-cmp-chart"></h3>
@@ -687,7 +739,6 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
       <!-- Comparison table -->
       <div class="cost-section">
         <h3 id="h-cmp-table"></h3>
-        <!-- Mini settings row for compare -->
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--card-alt);border:1px solid var(--card-border);border-radius:10px">
           <label style="font-size:.75rem;font-weight:700;color:var(--g500);text-transform:uppercase" id="lbl-cmp-model"></label>
           <select id="cmp-sel-model" onchange="renderCompareResults()" style="padding:6px 10px;border:1px solid var(--card-border);border-radius:8px;font-size:.88rem;background:var(--card-alt);color:var(--g900);font-family:'Space Grotesk',sans-serif;outline:none">
@@ -737,13 +788,49 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
         </div>
       </div>
     </div>
+  </div><!-- end #area-compare -->
 
-    <!-- Saved comparisons panel -->
-    <div class="compare-card cmp-saved-panel">
+  <!-- ORG AREA -->
+  <div id="area-org" class="hidden">
+    <div class="org-area-card">
+      <label class="input-label" id="lbl-org-area"></label>
+      <div class="input-row">
+        <input class="repo-input" id="org-area-url" type="text" autocomplete="off" spellcheck="false" />
+        <button class="fetch-btn" onclick="addOrgFromArea()">
+          <span>🏢</span>
+          <span id="btn-org-scan"></span>
+        </button>
+      </div>
+    </div>
+    <div id="org-scan-panel" class="hidden"></div>
+  </div><!-- end #area-org -->
+
+  <!-- REPORTS AREA -->
+  <div id="area-reports" class="hidden">
+    <div id="local-workspace" class="compare-card" style="margin-top:20px">
+      <label class="input-label" id="lbl-local-workspace"></label>
+      <div class="action-row">
+        <button class="action-btn primary" id="btn-open-folder" onclick="openReportFolder()"></button>
+        <button class="action-btn" id="btn-import-report" onclick="triggerReportImport()"></button>
+      </div>
+      <div class="workspace-meta" id="local-workspace-meta"></div>
+      <div class="warning-text hidden" id="local-workspace-warning"></div>
+      <div style="margin-top:18px">
+        <div class="library-group">
+          <h4 id="lbl-library-reports"></h4>
+          <div class="library-list" id="local-reports-list"></div>
+        </div>
+      </div>
+    </div>
+    <div id="snapshots-timeline" class="hidden" style="margin-top:20px"></div>
+    <div class="compare-card cmp-saved-panel" style="margin-top:20px">
       <h4 id="lbl-saved-comparisons"></h4>
       <div class="cmp-saved-list" id="cmp-saved-list"></div>
     </div>
-  </div><!-- end #section-compare -->
+    <input class="hidden-input" id="folder-input" type="file" webkitdirectory directory multiple onchange="handleFolderSelection(event)">
+    <input class="hidden-input" id="report-input" type="file" accept="application/json,.json" multiple onchange="handleReportImport(event)">
+    <input class="hidden-input" id="comparison-input" type="file" accept="application/json,.json" onchange="handleComparisonImport(event)">
+  </div><!-- end #area-reports -->
 
 </div>
 
@@ -928,6 +1015,22 @@ const I18N = {
     apiKeysCancelBtn: 'Cancel',
     apiKeysSaveBtn: 'Save Keys',
     translateBtn: 'Translate',
+    areaAnalyze: '🔍 Analyze',
+    areaCompare: '⚖️ Compare',
+    areaOrg: '🏢 Organization',
+    areaReports: '📁 Reports',
+    coverageMatrixTitle: 'Agent Coverage',
+    scenarioSoloName: 'Solo Dev',
+    scenarioSoloDesc: '1 dev · 10 chats/day',
+    scenarioTeamName: 'Small Team',
+    scenarioTeamDesc: '5 devs · 15 chats/day',
+    scenarioLargeName: 'Large Team',
+    scenarioLargeDesc: '20 devs · 30 chats/day',
+    scenarioCostLabel: '/month',
+    scatterPlotTitle: '📈 Tokens × Monthly Cost',
+    historicalSnapshots: '🕑 Historical Snapshots',
+    orgAreaLabel: 'GitHub Organization URL',
+    orgAreaBtn: 'Scan',
   },
   pt: {
     heroSub: 'Cole a URL de qualquer repositório GitHub para detectar configs de agentes IA, resolver cada arquivo referenciado e calcular o custo real do contexto carregado por requisição.',
@@ -1098,6 +1201,22 @@ const I18N = {
     apiKeysCancelBtn: 'Cancelar',
     apiKeysSaveBtn: 'Salvar Chaves',
     translateBtn: 'Traduzir',
+    areaAnalyze: '🔍 Analisar',
+    areaCompare: '⚖️ Comparar',
+    areaOrg: '🏢 Organização',
+    areaReports: '📁 Relatórios',
+    coverageMatrixTitle: 'Cobertura de Agentes',
+    scenarioSoloName: 'Dev Solo',
+    scenarioSoloDesc: '1 dev · 10 chats/dia',
+    scenarioTeamName: 'Time Pequeno',
+    scenarioTeamDesc: '5 devs · 15 chats/dia',
+    scenarioLargeName: 'Time Grande',
+    scenarioLargeDesc: '20 devs · 30 chats/dia',
+    scenarioCostLabel: '/mês',
+    scatterPlotTitle: '📈 Tokens × Custo Mensal',
+    historicalSnapshots: '🕑 Histórico de Snapshots',
+    orgAreaLabel: 'URL da Organização GitHub',
+    orgAreaBtn: 'Escanear',
   }
 };
 let LANG = 'pt';
@@ -1121,14 +1240,16 @@ function applyI18N() {
   document.getElementById('repo-url').placeholder = T('placeholder');
   document.getElementById('tab-detect').textContent = T('tabDetect');
   document.getElementById('tab-cost').textContent = T('tabCost');
-  document.getElementById('mode-tab-analyze').textContent = T('tabAnalyze');
-  document.getElementById('mode-tab-compare').textContent = T('tabCompare');
+  document.getElementById('area-tab-analyze').textContent = T('areaAnalyze');
+  document.getElementById('area-tab-compare').textContent = T('areaCompare');
+  document.getElementById('area-tab-org').textContent = T('areaOrg');
+  document.getElementById('area-tab-reports').textContent = T('areaReports');
   document.getElementById('lbl-local-workspace').textContent = T('localWorkspace');
   document.getElementById('btn-open-folder').textContent = T('openFolder');
   document.getElementById('btn-import-report').textContent = T('importReport');
   document.getElementById('lbl-library-reports').textContent = T('libraryReports');
   document.getElementById('lbl-saved-comparisons').textContent = T('savedComparisons');
-  document.getElementById('lbl-cmp-add').textContent = T('orgScanLabel');
+  document.getElementById('lbl-cmp-add').textContent = T('cmpAddLabel');
   document.getElementById('btn-cmp-add').textContent = T('cmpAddBtn');
   document.getElementById('btn-import-report-compare').textContent = T('importReport');
   document.getElementById('btn-import-comparison-compare').textContent = T('importComparison');
@@ -1137,11 +1258,15 @@ function applyI18N() {
   document.getElementById('cmp-run-text').textContent = T('cmpRun');
   document.getElementById('cmp-hint').textContent = T('cmpHint');
   document.getElementById('h-cmp-chart').textContent = T('cmpChartTitle');
+  document.getElementById('h-scatter-chart').textContent = T('scatterPlotTitle');
   document.getElementById('h-cmp-table').textContent = T('cmpTableTitle');
   document.getElementById('lbl-cmp-model').textContent = T('cmpModel');
   document.getElementById('lbl-cmp-devs').textContent = T('cmpDevs');
   document.getElementById('lbl-cmp-chats').textContent = T('cmpChats');
   document.getElementById('cmp-url').placeholder = T('orgPlaceholder');
+  document.getElementById('lbl-org-area').textContent = T('orgAreaLabel');
+  document.getElementById('org-area-url').placeholder = T('orgPlaceholder');
+  document.getElementById('btn-org-scan').textContent = T('orgAreaBtn');
   document.getElementById('h-tools').textContent = T('hTools');
   document.getElementById('h-tree').textContent = T('hTree');
   document.getElementById('h-files').textContent = T('hFiles');
@@ -1163,6 +1288,15 @@ function applyI18N() {
   document.getElementById('ak-desc').textContent = T('apiKeysDesc');
   document.getElementById('ak-cancel-btn').textContent = T('apiKeysCancelBtn');
   document.getElementById('ak-save-btn').textContent = T('apiKeysSaveBtn');
+  document.getElementById('sc-solo-name').textContent = T('scenarioSoloName');
+  document.getElementById('sc-solo-desc').textContent = T('scenarioSoloDesc');
+  document.getElementById('sc-solo-lbl').textContent = T('scenarioCostLabel');
+  document.getElementById('sc-team-name').textContent = T('scenarioTeamName');
+  document.getElementById('sc-team-desc').textContent = T('scenarioTeamDesc');
+  document.getElementById('sc-team-lbl').textContent = T('scenarioCostLabel');
+  document.getElementById('sc-large-name').textContent = T('scenarioLargeName');
+  document.getElementById('sc-large-desc').textContent = T('scenarioLargeDesc');
+  document.getElementById('sc-large-lbl').textContent = T('scenarioCostLabel');
   updateSliderLabels();
 }
 
@@ -1458,6 +1592,7 @@ async function analyze(){
 
   clearStatus();
   renderDetection(data.foundByTool,data.uniqueRefs,data.branch);
+  renderDetectionExtras(`${parsed.owner}/${parsed.repo}`,data.foundByTool,data.totalContextTokens||data.agentTok+data.refTok||0);
   document.getElementById('results').classList.remove('hidden');
   document.getElementById('empty-state').classList.add('hidden');
   recalcCost();
@@ -1546,6 +1681,7 @@ function setCurrentLocalRepo(fileName, repoId){
   STATE.uniqueRefs=repo.uniqueRefs||[];
   clearStatus();
   renderDetection(repo.foundByTool||{}, repo.uniqueRefs||[], repo.repoName||entry.fileName);
+  renderDetectionExtras(repo.repoName||entry.fileName, repo.foundByTool||{}, repo.totalContextTokens||0);
   document.getElementById('results').classList.remove('hidden');
   document.getElementById('empty-state').classList.add('hidden');
   recalcCost();
@@ -1568,6 +1704,7 @@ function renderLocalWorkspace(){
       ? `${T('workspaceLoaded')} · ${LOCAL_STATE.folderName}`
       : (currentEntry ? `${T('workspaceLoaded')} · ${currentEntry.fileName}` : T('workspaceIdle'))
   );
+  renderHistoricalSnapshots();
   reportList.innerHTML=LOCAL_STATE.reports.length?LOCAL_STATE.reports.map((entry,reportIndex)=>{
     const isCurrent=currentEntry&&currentEntry.fileName===entry.fileName;
     const scanDate=entry.report.generatedAt?new Date(entry.report.generatedAt).toLocaleString():'';
@@ -1596,7 +1733,7 @@ function openLocalRepo(reportIndex, repoIndex){
   const entry=LOCAL_STATE.reports[reportIndex];
   if(!entry)return;
   const repo=entry.report.repos[repoIndex];
-  if(repo)setCurrentLocalRepo(entry.fileName, repo.repoId);
+  if(repo){setCurrentLocalRepo(entry.fileName, repo.repoId);setArea('analyze');}
 }
 function addLocalRepoToCompare(reportIndex, repoIndex){
   const entry=LOCAL_STATE.reports[reportIndex];
@@ -1719,14 +1856,16 @@ async function loadBootstrapReport(){
 }
 
 // ══════════════════════════════════════
-// MODE SWITCHER
+// AREA SWITCHER
 // ══════════════════════════════════════
-function setMode(mode){
-  document.getElementById('section-analyze').classList.toggle('hidden',mode!=='analyze');
-  document.getElementById('section-compare').classList.toggle('hidden',mode!=='compare');
-  document.getElementById('mode-tab-analyze').classList.toggle('active',mode==='analyze');
-  document.getElementById('mode-tab-compare').classList.toggle('active',mode==='compare');
+function setArea(area){
+  ['analyze','compare','org','reports'].forEach(a=>{
+    document.getElementById(`area-${a}`).classList.toggle('hidden',a!==area);
+    document.getElementById(`area-tab-${a}`).classList.toggle('active',a===area);
+  });
+  if(area==='compare'&&COMPARE_STATE.results.length)renderCompareResults();
 }
+function setMode(mode){setArea(mode==='compare'?'compare':'analyze')}
 
 // ══════════════════════════════════════
 // COMPARE REPOS
@@ -1929,7 +2068,8 @@ function orgAddSelectedToCompare(){
     });
   if(added>0){
     document.getElementById('cmp-results').classList.add('hidden');
-    document.querySelector('#cmp-queue').scrollIntoView({behavior:'smooth',block:'center'});
+    setArea('compare');
+    setTimeout(()=>document.querySelector('#cmp-queue').scrollIntoView({behavior:'smooth',block:'center'}),100);
     showCmpStatus(LANG==='pt'?`${added} repositório(s) adicionado(s) à comparação.`:`${added} repositor${added===1?'y':'ies'} added to comparison.`,'loading');
     setTimeout(clearCmpStatus,3000);
   }
@@ -2040,6 +2180,8 @@ function addToCompare(){
   const org=parseOrgUrl(url);
   if(org){
     document.getElementById('cmp-url').value='';
+    document.getElementById('org-area-url').value=url;
+    setArea('org');
     scanOrg(org.org);
     return;
   }
@@ -2047,6 +2189,18 @@ function addToCompare(){
   if(!parsed){showCmpStatus(T('invalidGithubUrl'),'error');return}
   addCompareItem({type:'github-repo',key:`${parsed.owner}/${parsed.repo}`,owner:parsed.owner,repo:parsed.repo});
   document.getElementById('cmp-url').value='';
+}
+function addOrgFromArea(){
+  const url=document.getElementById('org-area-url').value.trim();
+  if(!url)return;
+  const org=parseOrgUrl(url);
+  if(!org){
+    const panel=document.getElementById('org-scan-panel');
+    panel.classList.remove('hidden');
+    panel.innerHTML=`<div class="status-card error">❌ <span>${T('invalidGithubUrl')}</span></div>`;
+    return;
+  }
+  scanOrg(org.org);
 }
 function removeFromCompare(id){
   COMPARE_STATE.items=COMPARE_STATE.items.filter(item=>compareItemId(item)!==id);
@@ -2109,7 +2263,7 @@ function loadComparisonDocument(comparison){
   document.getElementById('cmp-results').classList.add('hidden');
   COMPARE_STATE.results=[];
   renderCmpQueue();
-  setMode('compare');
+  setArea('compare');
   showCmpStatus(T('comparisonLoaded'),'loading');
 }
 async function saveComparisonText(fileName, text){
@@ -2278,6 +2432,7 @@ function renderCompareResults(){
 
   document.getElementById('cmp-result-table').innerHTML=hdr+'<tbody>'+rows+'</tbody>';
   document.getElementById('cmp-results').classList.remove('hidden');
+  renderScatterPlot(results);
 }
 
 function showCmpStatus(m,t='loading'){
@@ -2357,6 +2512,176 @@ function renderDetection(foundByTool,uniqueRefs,branch){
 
   // Render Context Health
   renderHealth(foundByTool, uniqueRefs);
+}
+
+function renderDetectionExtras(repoName, foundByTool, totalTok){
+  renderResultHeader(repoName, totalTok, foundByTool);
+  renderCoverageMatrix(repoName, foundByTool);
+}
+
+// ══════════════════════════════════════
+// NEW UI COMPONENTS
+// ══════════════════════════════════════
+function renderResultHeader(repoName, totalTok, foundByTool){
+  const el=document.getElementById('result-header');
+  const foundCount=Object.keys(foundByTool||{}).length;
+  const totalIdeal=8000,totalWarn=20000;
+  let badgeClass='ok',badgeLabel='OK';
+  if(totalTok>totalWarn){badgeClass='max';badgeLabel='MAX';}
+  else if(totalTok>totalIdeal){badgeClass='warn';badgeLabel='WARN';}
+  el.innerHTML=`
+    <div class="rh-name">${esc(repoName||'Repository')}</div>
+    <span class="health-badge ${badgeClass}">${badgeLabel}</span>
+    <div class="rh-tokens">${fmtTok(totalTok)} tokens</div>
+    <div class="rh-actions">
+      <button class="action-btn" onclick="addCurrentAnalyzedToCompare()" title="${T('reportCompare')}">➕ ${T('reportCompare')}</button>
+      <button class="action-btn" onclick="exportCurrentAnalysis()" title="${T('exportJson')||'Export JSON'}">💾 ${T('exportJson')||'Export JSON'}</button>
+    </div>`;
+  el.classList.remove('hidden');
+}
+
+function renderCoverageMatrix(repoName, foundByTool){
+  const el=document.getElementById('coverage-matrix');
+  const headerCells=AGENT_TOOLS.map(t=>`<th title="${t.name}">${t.icon}<br><span style="font-size:.65rem">${t.name.split(' ')[0]}</span></th>`).join('');
+  const cells=AGENT_TOOLS.map(t=>{
+    const found=!!(foundByTool&&foundByTool[t.id]);
+    const color=found?t.color:'var(--g400)';
+    return`<td title="${t.name}: ${found?T('found'):T('missing')}"><span class="coverage-dot" style="background:${color};box-shadow:${found?`0 0 6px ${color}`:''};opacity:${found?1:0.3}"></span></td>`;
+  }).join('');
+  el.innerHTML=`<div class="coverage-matrix-title">${T('coverageMatrixTitle')}</div>
+    <table class="coverage-table">
+      <thead><tr><th>${esc(repoName||'')}</th>${headerCells}</tr></thead>
+      <tbody><tr><td>${esc(repoName||'')}</td>${cells}</tr></tbody>
+    </table>`;
+  el.classList.remove('hidden');
+}
+
+let _scatterChart=null;
+function renderScatterPlot(results){
+  const el=document.getElementById('scatter-section');
+  const canvas=document.getElementById('chart-compare-scatter');
+  if(!results||!results.length){el.style.display='none';return;}
+
+  const modelId=document.getElementById('cmp-sel-model').value;
+  const m=PRICING[modelId];
+  const devs=+document.getElementById('cmp-sl-devs').value;
+  const chats=+document.getElementById('cmp-sl-chats').value;
+
+  function costFor(tok){
+    const cached=Math.round(tok*0.7);const uncached=tok-cached;
+    const ic=(uncached/1e6)*m.input;const cc=(cached/1e6)*(m.cacheRead||0);
+    const cw=m.cacheWrite?(cached/1e6)*m.cacheWrite*0.05:0;
+    const oc=(2000/1e6)*m.output;
+    return(ic+cc+cw+oc)*devs*chats*22;
+  }
+
+  const validResults=results.filter(r=>r.ok&&!r.noFiles);
+  if(validResults.length<2){el.style.display='none';return;}
+
+  const pts=validResults.map(r=>({
+    x:r.totalContextTokens||0,
+    y:+costFor(r.totalContextTokens||0).toFixed(2),
+    label:r.source==='github'?(r.key||'').split('/').pop():(r.repoName||r.key||''),
+  }));
+
+  if(_scatterChart)_scatterChart.destroy();
+  _scatterChart=new Chart(canvas,{
+    type:'scatter',
+    data:{datasets:[{
+      label:'repos',
+      data:pts,
+      backgroundColor:pts.map((_,i)=>`hsl(${(i*47)%360},65%,55%)`),
+      pointRadius:8,pointHoverRadius:11,
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label:ctx=>{const p=ctx.raw;return[p.label,`${fmtTok(p.x)} tokens`,`${fmt(p.y)}/month`];}
+        }}
+      },
+      scales:{
+        x:{title:{display:true,text:'Tokens',color:'#64748b'},ticks:{color:'#64748b',callback:v=>fmtTok(v)},grid:{color:THEME==='dark'?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'}},
+        y:{title:{display:true,text:'Cost/month',color:'#64748b'},ticks:{color:'#64748b',callback:v=>fmt(v)},grid:{color:THEME==='dark'?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'}},
+      }
+    }
+  });
+  el.style.display='';
+}
+
+function renderHistoricalSnapshots(){
+  const timelineEl=document.getElementById('snapshots-timeline');
+  const grouped=new Map();
+  LOCAL_STATE.reports.forEach(entry=>{
+    entry.report.repos.forEach(repo=>{
+      const key=repo.repoName||repo.repoId;
+      if(!grouped.has(key))grouped.set(key,[]);
+      grouped.get(key).push({entry,repo});
+    });
+  });
+  const multiSnap=[...grouped.values()].filter(arr=>arr.length>1);
+  if(!multiSnap.length){timelineEl.classList.add('hidden');return;}
+  const rows=multiSnap.flatMap(arr=>{
+    const sorted=[...arr].sort((a,b)=>new Date(a.entry.report.generatedAt||0)-new Date(b.entry.report.generatedAt||0));
+    return sorted.map((item,i)=>{
+      const prev=sorted[i-1];
+      const delta=prev?item.repo.totalContextTokens-(prev.repo.totalContextTokens||0):null;
+      const dateStr=item.entry.report.generatedAt?new Date(item.entry.report.generatedAt).toLocaleString():'—';
+      const deltaHtml=delta===null?''
+        :delta>0?`<span class="snapshot-delta up">+${fmtTok(delta)}</span>`
+        :delta<0?`<span class="snapshot-delta down">${fmtTok(delta)}</span>`
+        :`<span class="snapshot-delta same">±0</span>`;
+      return`<div class="snapshot-row">
+        <span class="snapshot-date">${esc(dateStr)}</span>
+        <span class="snapshot-repo">${esc(item.repo.repoName||item.repo.repoId)}</span>
+        <span class="snapshot-tok">${fmtTok(item.repo.totalContextTokens||0)}</span>
+        ${deltaHtml}
+      </div>`;
+    });
+  }).join('');
+  timelineEl.innerHTML=`<div class="snapshot-timeline"><div class="snapshot-timeline-title">${T('historicalSnapshots')}</div>${rows}</div>`;
+  timelineEl.classList.remove('hidden');
+}
+
+function applyScenario(devs,chats,cardEl){
+  document.getElementById('sl-devs').value=devs;
+  document.getElementById('sl-chats').value=chats;
+  document.querySelectorAll('.scenario-card').forEach(c=>c.classList.remove('active'));
+  if(cardEl)cardEl.classList.add('active');
+  recalcCost();
+}
+
+function addCurrentAnalyzedToCompare(){
+  const url=document.getElementById('repo-url').value.trim();
+  const parsed=parseRepoUrl(url);
+  if(parsed){
+    addCompareItem({type:'github-repo',key:`${parsed.owner}/${parsed.repo}`,owner:parsed.owner,repo:parsed.repo});
+    setArea('compare');
+  }
+}
+
+function exportCurrentAnalysis(){
+  if(!STATE.analyzed)return;
+  const repoName=document.getElementById('repo-url').value.trim().split('/').pop()||'repo';
+  const payload={
+    kind:'agentlens-report',schemaVersion:1,
+    generatedAt:new Date().toISOString(),
+    repos:[{
+      repoName,
+      foundByTool:STATE.foundByTool,
+      uniqueRefs:STATE.uniqueRefs.map(r=>({...r,fromTools:[...r.fromTools]})),
+      agentTok:Object.values(STATE.foundByTool).reduce((s,f)=>s+estimateTokens(f.content),0),
+      refTok:STATE.uniqueRefs.filter(r=>r.found).reduce((s,r)=>s+r.tokens,0),
+      totalContextTokens:STATE.totalContextTokens,
+    }],
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`agentlens-${repoName}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 // ══════════════════════════════════════
@@ -2517,6 +2842,11 @@ function recalcCost(){
 
   if(chartPerDev)chartPerDev.destroy();
   chartPerDev=new Chart(document.getElementById('chart-perdev'),{type:'bar',data:{labels:devSteps.map(d=>d+(LANG==='pt'?' devs':' devs')),datasets:[{label:T('perDevTitle'),data:devCosts,backgroundColor:devSteps.map(d=>d===devs?'#2547f4':'rgba(37,71,244,.35)'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmt(ctx.parsed.y)+' '+T('kpiMonth')}}},scales:{y:{ticks:{color:'#64748b',callback:v=>isBRL?'R$'+Math.round(v*BRL_RATE).toLocaleString('pt-BR'):'$'+v.toLocaleString()},grid:{color:THEME==='dark'?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'}},x:{grid:{display:false},ticks:{color:'#64748b'}}}}});
+
+  // Update scenario card costs
+  function scenarioCost(d,c){const pd=(perReq)*d*c;return pd*22;}
+  const scCosts=[[1,10,'sc-solo-cost'],[5,15,'sc-team-cost'],[20,30,'sc-large-cost']];
+  scCosts.forEach(([d,c,id])=>{const el=document.getElementById(id);if(el)el.textContent=fmt(scenarioCost(d,c));});
 
   // Comparison table (sortable)
   const table=document.getElementById('comparison-table');
@@ -2746,6 +3076,7 @@ function toggleTheme() { applyTheme(THEME === 'dark' ? 'light' : 'dark'); }
 // ══════════════════════════════════════
 document.getElementById('repo-url').addEventListener('keydown',e=>{if(e.key==='Enter')analyze()})
 document.getElementById('cmp-url').addEventListener('keydown',e=>{if(e.key==='Enter')addToCompare()});
+document.getElementById('org-area-url').addEventListener('keydown',e=>{if(e.key==='Enter')addOrgFromArea()});
 applyTheme(THEME);
 applyI18N();
 (async function initLocalWorkspace(){
