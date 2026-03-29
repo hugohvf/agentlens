@@ -22,7 +22,9 @@
     ".agentlens.example.json",
     "agentlens.html",
     "agentlens-core.js",
-    "cli.js"
+    "cli.js",
+    "db.js",
+    "server.js"
   ],
   "engines": {
     "node": ">=18.0.0"
