@@ -87,15 +87,18 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--g900);line-height:1.6}
-.hero{background:var(--hero-bg);color:var(--hero-text);padding:44px 40px 28px;text-align:center;position:relative;border-bottom:1px solid var(--hero-border)}
+.hero{background:var(--hero-bg);color:var(--hero-text);padding:14px 20px;position:relative;border-bottom:1px solid var(--hero-border)}
 .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% 0%,var(--hero-glow) 0%,transparent 70%);pointer-events:none}
-.hero h1{font-size:2.2rem;font-weight:800;letter-spacing:-1px;margin-bottom:8px;position:relative}
-.hero h1 span{background:linear-gradient(135deg,#93c5fd,#e0f2fe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero p{font-size:.98rem;opacity:.75;max-width:580px;margin:0 auto;position:relative}
-.lang-toggle{position:absolute;top:16px;right:64px;display:flex;gap:0;background:var(--toggle-bg);border:1px solid var(--hero-border);border-radius:8px;overflow:hidden}
+.hero-inner{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;position:relative;z-index:1}
+.brand-lockup{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-mark{width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#93c5fd,var(--cyan));box-shadow:0 0 18px rgba(34,211,238,.35)}
+.brand-name{font-size:1rem;font-weight:800;letter-spacing:-.04em;color:#fff;white-space:nowrap}
+.hero-sub{display:none}
+.hero-controls{display:flex;align-items:center;gap:8px;justify-self:end}
+.lang-toggle{display:flex;gap:0;background:var(--toggle-bg);border:1px solid var(--hero-border);border-radius:8px;overflow:hidden}
 .lang-btn{padding:6px 14px;font-size:.8rem;font-weight:700;color:var(--toggle-color);background:none;border:none;cursor:pointer;transition:.15s}
 .lang-btn.active{background:var(--toggle-active-bg);color:var(--toggle-active-color)}
-.theme-toggle-btn{position:absolute;top:16px;right:16px;background:var(--toggle-bg);border:1px solid var(--hero-border);border-radius:8px;padding:6px 10px;font-size:.88rem;cursor:pointer;transition:.15s;line-height:1}
+.theme-toggle-btn{background:var(--toggle-bg);border:1px solid var(--hero-border);border-radius:8px;padding:6px 10px;font-size:.88rem;cursor:pointer;transition:.15s;line-height:1}
 .container{max-width:980px;margin:0 auto;padding:0 20px}
 .input-section{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:28px 32px;margin:0 auto 24px;max-width:800px;position:relative;z-index:10}
 .input-label{font-size:.78rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block}
@@ -248,21 +251,29 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
 .local-repo-tab .lrt-name{font-family:monospace;font-weight:700;font-size:.88rem;color:var(--g900)}
 .local-repo-tab .lrt-tok{font-size:.76rem;color:var(--g500);font-weight:600}
 /* AREA NAV */
-.area-nav{display:flex;gap:0;margin-bottom:20px;background:var(--card);border:1px solid var(--card-border);border-radius:12px;overflow:hidden}
-.area-tab{flex:1;padding:13px 8px;text-align:center;font-weight:700;font-size:.88rem;cursor:pointer;border:none;background:none;color:var(--g500);transition:.2s;border-bottom:2px solid transparent;font-family:'Space Grotesk',sans-serif;white-space:nowrap}
-.area-tab.active{color:var(--cyan);border-bottom-color:var(--cyan);background:rgba(34,211,238,.04)}
-.area-tab:hover:not(.active){color:var(--g700);background:rgba(255,255,255,.03)}
+.area-nav{display:flex;gap:6px;padding:4px;background:var(--toggle-bg);border:1px solid var(--hero-border);border-radius:12px;overflow:auto;scrollbar-width:none}
+.area-nav::-webkit-scrollbar{display:none}
+.area-tab{flex:0 0 auto;padding:10px 14px;text-align:center;font-weight:700;font-size:.82rem;cursor:pointer;border:none;background:none;color:var(--toggle-color);transition:.2s;border-radius:8px;font-family:'Space Grotesk',sans-serif;white-space:nowrap}
+.area-tab.active{color:#fff;background:var(--toggle-active-bg)}
+.area-tab:hover:not(.active){color:#fff;background:rgba(255,255,255,.08)}
 /* RESULT HEADER */
-.result-header{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:18px 22px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.rh-name{font-size:1rem;font-weight:800;color:var(--g900);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rh-tokens{font-family:monospace;font-size:1.1rem;font-weight:800;color:var(--cyan);white-space:nowrap}
+.result-overview{display:grid;gap:14px;margin-bottom:18px}
+.result-header{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:20px 22px;display:grid;gap:16px}
+.rh-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}
+.rh-title{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.rh-name{font-size:1.18rem;font-weight:800;color:var(--g900);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rh-support{font-size:.76rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.rh-bottom{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:end}
+.rh-kpi{display:flex;flex-direction:column;gap:5px}
+.rh-kpi-label{font-size:.76rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.05em}
+.rh-tokens{font-family:monospace;font-size:1.6rem;font-weight:800;color:var(--cyan);white-space:nowrap;line-height:1}
 .health-badge{border-radius:99px;padding:3px 12px;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 .health-badge.ok{background:var(--green-l);color:var(--green)}
 .health-badge.warn{background:var(--yellow-l);color:var(--orange)}
 .health-badge.max{background:var(--red-l);color:var(--red)}
-.rh-actions{display:flex;gap:7px;flex-shrink:0}
+.rh-actions{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
 /* COVERAGE MATRIX */
-.coverage-matrix{background:var(--card);border:1px solid var(--card-border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.coverage-matrix{background:var(--card);border:1px solid var(--card-border);border-radius:12px;overflow:hidden}
 .coverage-matrix-title{padding:12px 18px;background:var(--card-alt);border-bottom:1px solid var(--card-border);font-size:.8rem;font-weight:800;color:var(--g700);text-transform:uppercase;letter-spacing:.05em}
 .coverage-table{width:100%;border-collapse:collapse;font-size:.8rem}
 .coverage-table th{padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:var(--g500);border-bottom:1px solid var(--card-border);white-space:nowrap;background:var(--card-alt)}
@@ -270,6 +281,18 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
 .coverage-table td{padding:9px 14px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04)}
 .coverage-table td:first-child{text-align:left;font-family:monospace;font-weight:700;font-size:.82rem;color:var(--g900)}
 .coverage-dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+@media(max-width:760px){
+  .result-header{padding:18px}
+  .rh-top,.rh-bottom{grid-template-columns:1fr}
+  .rh-name{white-space:normal}
+  .rh-support{white-space:normal}
+  .rh-actions{justify-content:stretch}
+  .rh-actions .action-btn{flex:1;min-width:160px}
+}
+@media(max-width:520px){
+  .rh-tokens{font-size:1.3rem}
+  .rh-actions .action-btn{width:100%;min-width:0}
+}
 /* SCENARIO CARDS */
 .scenario-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 @media(max-width:640px){.scenario-cards{grid-template-columns:1fr}}
@@ -420,8 +443,20 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
 .modal-actions button{padding:8px 20px;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:.15s}
 .modal-save-btn{background:var(--blue);color:#fff;border:none}.modal-save-btn:hover{opacity:.85}
 .modal-cancel-btn{background:none;border:1px solid var(--card-border);color:var(--g700)}.modal-cancel-btn:hover{border-color:rgba(37,71,244,.4);color:var(--cyan)}
-.settings-btn{position:absolute;top:16px;left:16px;background:var(--toggle-bg);border:1px solid var(--hero-border);border-radius:8px;padding:6px 10px;font-size:.82rem;cursor:pointer;color:rgba(255,255,255,.65);transition:.15s;line-height:1}
+.settings-btn{background:var(--toggle-bg);border:1px solid var(--hero-border);border-radius:8px;padding:6px 10px;font-size:.82rem;cursor:pointer;color:rgba(255,255,255,.65);transition:.15s;line-height:1}
 .settings-btn:hover{border-color:rgba(255,255,255,.35);color:#fff}
+@media(max-width:980px){
+  .hero-inner{grid-template-columns:auto auto;justify-content:space-between}
+  .area-nav{grid-column:1/-1;order:3}
+  .hero-controls{justify-self:auto}
+}
+@media(max-width:640px){
+  .hero{padding:12px 14px}
+  .hero-inner{gap:12px}
+  .brand-name{font-size:.92rem}
+  .hero-controls{width:100%;justify-content:flex-end;flex-wrap:wrap}
+  .lang-toggle{order:3}
+}
 /* FULLSCREEN MODAL */
 .fullscreen-modal{position:fixed;inset:0;z-index:900;background:var(--bg);display:none;flex-direction:column;animation:fs-in .15s ease}
 .fullscreen-modal.open{display:flex}
@@ -476,27 +511,32 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
 </div>
 
 <div class="hero">
-  <div class="lang-toggle">
-    <button class="lang-btn" onclick="setLang('en')">EN</button>
-    <button class="lang-btn active" onclick="setLang('pt')">PT</button>
+  <div class="hero-inner">
+    <div class="brand-lockup">
+      <div class="brand-mark"></div>
+      <div class="brand-name">AgentLens</div>
+    </div>
+    <div class="area-nav">
+      <button class="area-tab active" onclick="setArea('analyze')" id="area-tab-analyze"></button>
+      <button class="area-tab" onclick="setArea('compare')" id="area-tab-compare"></button>
+      <button class="area-tab" onclick="setArea('org')" id="area-tab-org"></button>
+      <button class="area-tab" onclick="setArea('reports')" id="area-tab-reports"></button>
+    </div>
+    <div class="hero-controls">
+      <button class="settings-btn" onclick="showApiKeysModal()" title="API Keys">🔑</button>
+      <div class="lang-toggle">
+        <button class="lang-btn" onclick="setLang('en')">EN</button>
+        <button class="lang-btn active" onclick="setLang('pt')">PT</button>
+      </div>
+      <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+    </div>
   </div>
-  <button class="settings-btn" onclick="showApiKeysModal()" title="API Keys">🔑</button>
-  <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
-  <h1><span>Agent</span>Lens</h1>
-  <p id="hero-sub"></p>
+  <p id="hero-sub" class="hero-sub"></p>
 </div>
 
-<div class="container" style="padding-top:24px;padding-bottom:24px">
+<div class="container" style="padding-top:18px;padding-bottom:24px">
   <!-- LOCAL MODE BANNER (shown when opened from CLI) -->
   <div id="local-banner" class="local-banner hidden" style="margin-top:20px"></div>
-
-  <!-- 4-AREA NAV -->
-  <div class="area-nav" style="margin-top:20px">
-    <button class="area-tab active" onclick="setArea('analyze')" id="area-tab-analyze"></button>
-    <button class="area-tab" onclick="setArea('compare')" id="area-tab-compare"></button>
-    <button class="area-tab" onclick="setArea('org')" id="area-tab-org"></button>
-    <button class="area-tab" onclick="setArea('reports')" id="area-tab-reports"></button>
-  </div>
 
   <!-- ANALYZE AREA -->
   <div id="area-analyze">
@@ -522,9 +562,12 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
   </div>
 
   <div id="status-area"></div>
-  <div id="result-header" class="hidden"></div>
 
   <div id="results" class="hidden">
+    <div class="result-overview">
+      <div id="result-header" class="hidden"></div>
+      <div id="coverage-matrix" class="coverage-matrix hidden"></div>
+    </div>
     <!-- MAIN TABS -->
     <div class="main-tabs">
       <button class="main-tab active" onclick="showPanel('panel-detect',this)" id="tab-detect"></button>
@@ -533,7 +576,6 @@ footer a{color:var(--g500);text-decoration:none}.footer a:hover{color:var(--cyan
 
     <!-- DETECTION PANEL -->
     <div class="tab-panel active" id="panel-detect">
-      <div id="coverage-matrix" class="coverage-matrix hidden"></div>
       <div class="stats-bar" id="stats-bar"></div>
       <div id="savings-banner" class="savings-banner hidden"></div>
       <!-- CONTEXT HEALTH -->
@@ -902,8 +944,8 @@ const I18N = {
     tokens: 'tokens',
     noRefs: 'No file references detected',
     noRefsP: 'The agent config files don\'t reference any local files via links, @imports, or known patterns.',
-    dedupTitle: 'Deduplication active',
-    dedupDetail: (n,raw,dedup) => `${n} shared file(s). Without dedup: ~${raw}. Real context: ~${dedup}.`,
+    dedupTitle: 'Agent view model',
+    dedupDetail: (n,raw,dedup) => `${n} agent view(s). Largest active view: ~${dedup}. All discovered files: ~${raw}.`,
     scanning: 'Scanning agent config files on branch',
     parsing: 'Parsing references',
     fetching: 'Fetching referenced files',
@@ -932,6 +974,8 @@ const I18N = {
     cmpColRepo: 'Repository',
     cmpColTools: 'Tools',
     cmpColTokens: 'Tokens',
+    cmpColAction: 'Action',
+    cmpOpenAnalysis: 'Open Analysis',
     cmpNoConfigs: 'no agent configs',
     cmpScanning: 'Scanning',
     localWorkspace: 'Local Reports',
@@ -963,8 +1007,8 @@ const I18N = {
     localImported: 'Imported',
     localFolder: 'Folder',
     localUnresolved: 'Unresolved',
-    orgScanLabel: 'Add Repository or Scan Organization',
-    orgPlaceholder: 'https://github.com/owner/repository or organization',
+    orgScanLabel: 'Add Repository or Scan Organization/User',
+    orgPlaceholder: 'https://github.com/owner/repository or user/organization',
     orgFetching: 'Fetching repositories from',
     orgScanning: 'Scanning repositories',
     orgOf: 'of',
@@ -978,9 +1022,9 @@ const I18N = {
     orgSortName: 'Name',
     orgAddSelected: 'Compare Selected',
     orgDownloadReport: 'Download Org Report',
-    orgNotFound: 'Organization not found on GitHub.',
+    orgNotFound: 'GitHub organization or user not found.',
     orgRateLimit: 'GitHub rate limit reached. Wait a few minutes and try again.',
-    orgNetworkError: 'Network error fetching organization repositories.',
+    orgNetworkError: 'Network error fetching GitHub repositories.',
     orgColRepo: 'Repository',
     orgColTools: 'Tools',
     orgColTokens: 'Tokens',
@@ -995,11 +1039,11 @@ const I18N = {
     orgNoConfigured: 'No repositories with agent configuration found.',
     orgSortLabel: 'Sort:',
     compareMax: 'Maximum 20 items in compare.',
-    invalidGithubUrl: '❌ Invalid GitHub URL or organization.',
+    invalidGithubUrl: '❌ Invalid GitHub URL, repository, user, or organization.',
     cmpHint: 'Add 2–20 repositories, then click Compare All',
     configTokens: 'config tokens',
     totalContext: 'total context',
-    dedupSaved: 'dedup',
+    dedupSaved: 'not simultaneous',
     fsExpand: 'Full screen',
     fsCopy: 'Copy',
     fsClose: 'Close (Esc)',
@@ -1029,7 +1073,7 @@ const I18N = {
     scenarioCostLabel: '/month',
     scatterPlotTitle: '📈 Tokens × Monthly Cost',
     historicalSnapshots: '🕑 Historical Snapshots',
-    orgAreaLabel: 'GitHub Organization URL',
+    orgAreaLabel: 'GitHub Organization or User URL',
     orgAreaBtn: 'Scan',
   },
   pt: {
@@ -1089,8 +1133,8 @@ const I18N = {
     tokens: 'tokens',
     noRefs: 'Nenhuma referência detectada',
     noRefsP: 'Os arquivos de config não referenciam nenhum arquivo local via links, @imports ou padrões conhecidos.',
-    dedupTitle: 'Deduplicação ativa',
-    dedupDetail: (n,raw,dedup) => `${n} arquivo(s) compartilhado(s). Sem dedup: ~${raw}. Contexto real: ~${dedup}.`,
+    dedupTitle: 'Modelo de visão do agente',
+    dedupDetail: (n,raw,dedup) => `${n} visão(ões) de agente. Maior visão ativa: ~${dedup}. Todos os arquivos descobertos: ~${raw}.`,
     scanning: 'Escaneando configs na branch',
     parsing: 'Parseando referências',
     fetching: 'Buscando arquivos referenciados',
@@ -1119,6 +1163,8 @@ const I18N = {
     cmpColRepo: 'Repositório',
     cmpColTools: 'Ferramentas',
     cmpColTokens: 'Tokens',
+    cmpColAction: 'Ação',
+    cmpOpenAnalysis: 'Abrir Análise',
     cmpNoConfigs: 'sem agent configs',
     cmpScanning: 'Escaneando',
     localWorkspace: 'Relatórios Locais',
@@ -1150,8 +1196,8 @@ const I18N = {
     localImported: 'Importado',
     localFolder: 'Pasta',
     localUnresolved: 'Não resolvido',
-    orgScanLabel: 'Adicionar Repositório ou Avaliar Organização',
-    orgPlaceholder: 'https://github.com/dono/repositório ou organização',
+    orgScanLabel: 'Adicionar Repositório ou Avaliar Organização/Usuário',
+    orgPlaceholder: 'https://github.com/dono/repositório ou usuário/organização',
     orgFetching: 'Buscando repositórios de',
     orgScanning: 'Escaneando repositórios',
     orgOf: 'de',
@@ -1165,9 +1211,9 @@ const I18N = {
     orgSortName: 'Nome',
     orgAddSelected: 'Comparar Selecionados',
     orgDownloadReport: 'Baixar Relatório da Organização',
-    orgNotFound: 'Organização não encontrada no GitHub.',
+    orgNotFound: 'Organização ou usuário não encontrado no GitHub.',
     orgRateLimit: 'Rate limit do GitHub atingido. Aguarde alguns minutos e tente novamente.',
-    orgNetworkError: 'Erro de rede ao buscar repositórios da organização.',
+    orgNetworkError: 'Erro de rede ao buscar repositórios no GitHub.',
     orgColRepo: 'Repositório',
     orgColTools: 'Ferramentas',
     orgColTokens: 'Tokens',
@@ -1182,10 +1228,10 @@ const I18N = {
     orgNoConfigured: 'Nenhum repositório com configuração de agente encontrado.',
     orgSortLabel: 'Ordenar:',
     compareMax: 'Máximo de 20 itens na comparação.',
-    invalidGithubUrl: '❌ URL GitHub ou organização inválida.',
+    invalidGithubUrl: '❌ URL do GitHub, repositório, usuário ou organização inválida.',
     configTokens: 'tokens de config',
     totalContext: 'contexto total',
-    dedupSaved: 'dedup',
+    dedupSaved: 'não simultâneo',
     fsExpand: 'Tela cheia',
     fsCopy: 'Copiar',
     fsClose: 'Fechar (Esc)',
@@ -1215,7 +1261,7 @@ const I18N = {
     scenarioCostLabel: '/mês',
     scatterPlotTitle: '📈 Tokens × Custo Mensal',
     historicalSnapshots: '🕑 Histórico de Snapshots',
-    orgAreaLabel: 'URL da Organização GitHub',
+    orgAreaLabel: 'URL de Organização ou Usuário GitHub',
     orgAreaBtn: 'Escanear',
   }
 };
@@ -1388,6 +1434,13 @@ function fmtUSD(n){return n<0.01?'<$0.01':n<1?'$'+n.toFixed(3):n<1000?'$'+n.toFi
 function fmtBRL(n){const v=n*BRL_RATE;return v<0.01?'<R$0,01':v<1?'R$'+v.toFixed(3).replace('.',','):v<1000?'R$'+v.toFixed(2).replace('.',','):'R$'+Math.round(v).toLocaleString('pt-BR')}
 function fmt(n){return document.getElementById('chk-brl').checked?fmtBRL(n):fmtUSD(n)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function normalizeRefPath(p){return String(p||'').replace(/\\/g,'/').replace(/^\.\//,'').replace(/^\/+/,'')}
+function resolveRefPath(basePath,refPath){const raw=normalizeRefPath(refPath);if(!raw)return'';if(!raw.startsWith('.'))return raw;const parts=normalizeRefPath(basePath).split('/').filter(Boolean);if(parts.length)parts.pop();for(const part of raw.split('/')){if(!part||part==='.'){continue}if(part==='..'){if(parts.length)parts.pop();continue}parts.push(part)}return parts.join('/')}
+function isLikelyInlineRef(p){return !!p&&p.length<120&&!/\s/.test(p)&&!p.startsWith('http')&&(p.includes('/')||/\.(md|mdx|txt|json|ya?ml|toml|ini|cfg|conf|xml|html|css|js|cjs|mjs|ts|tsx|jsx|py|rb|go|rs|java|c|cpp|h|hpp|sh)$/i.test(p))}
+function calcRefTok(uniqueRefs){return(uniqueRefs||[]).filter(r=>r.found).reduce((s,r)=>s+r.tokens,0)}
+function calcToolViewTokens(foundByTool,uniqueRefs){const totals={};for(const [toolId,file] of Object.entries(foundByTool||{})){let total=estimateTokens(file.content||'');for(const ref of uniqueRefs||[]){if(ref.found&&ref.fromTools&&ref.fromTools.has(toolId))total+=ref.tokens||0}totals[toolId]=total}return totals}
+function calcMaxToolViewTokens(foundByTool,uniqueRefs){const totals=Object.values(calcToolViewTokens(foundByTool,uniqueRefs));return totals.length?Math.max(...totals):0}
+function calcAllContextTokens(foundByTool,uniqueRefs){const seen=new Set();let total=0;for(const file of Object.values(foundByTool||{})){const path=normalizeRefPath(file&&file.path);if(!path||seen.has(path))continue;seen.add(path);total+=estimateTokens(file.content||'')}for(const ref of uniqueRefs||[]){const path=normalizeRefPath(ref&&ref.path);if(!ref.found||!path||seen.has(path))continue;seen.add(path);total+=ref.tokens||0}return total}
 function setExample(u){document.getElementById('repo-url').value=u;document.getElementById('repo-url').focus()}
 function parseRepoUrl(u){u=u.trim().replace(/\/$/,'');const m=u.match(/github\.com\/([^/]+)\/([^/]+)/);return m?{owner:m[1],repo:m[2].replace(/\.git$/,'')}:null}
 function parseOrgUrl(u){u=u.trim().replace(/[?#].*$/,'').replace(/\/+$/,'');const m=u.match(/^https?:\/\/github\.com\/([^/]+)$/);return m?{org:m[1]}:null}
@@ -1421,6 +1474,8 @@ function normalizeRepoData(repo,index){
     uniqueRefs: Array.isArray(repo&&repo.uniqueRefs) ? repo.uniqueRefs.map(normalizeRef) : [],
     agentTok: Number(repo&&repo.agentTok) || 0,
     refTok: Number(repo&&repo.refTok) || 0,
+    viewTokensByTool: repo&&repo.viewTokensByTool&&typeof repo.viewTokensByTool==='object' ? repo.viewTokensByTool : {},
+    allContextTokens: Number(repo&&repo.allContextTokens) || 0,
     totalContextTokens: Number(repo&&repo.totalContextTokens) || 0,
     noFiles: !!(repo&&repo.noFiles),
   };
@@ -1493,7 +1548,7 @@ function parseReferences(content){
     m=t.match(/^context[_-]?files?:\s*\[([^\]]+)\]/i);
     if(m){m[1].split(',').forEach(f=>{const p=f.trim().replace(/["']/g,'');if(p)addR(found,p,'context')});continue}
     const cr=/`([^`]+\.[a-zA-Z0-9]+)`/g;let cm;
-    while((cm=cr.exec(line))!==null){const p=cm[1];if(!p.startsWith('http')&&p.includes('/')&&p.split('/').length>=2&&p.length<120)addR(found,p,'inline-code')}
+    while((cm=cr.exec(line))!==null){const p=cm[1];if(isLikelyInlineRef(p))addR(found,p,'inline-code')}
   }
   return Array.from(found.values());
 }
@@ -1548,19 +1603,59 @@ async function analyzeRepoData(owner,repo){
   if(!foundTools.length)return{ok:true,branch:usedBranch,foundByTool:{},uniqueRefs:[],agentTok:0,refTok:0,totalContextTokens:0,noFiles:true};
 
   const refPool=new Map();
-  for(const tool of foundTools){
-    const refs=parseReferences(foundByTool[tool.id].content);
-    for(const ref of refs){
-      if(!refPool.has(ref.path))refPool.set(ref.path,{path:ref.path,type:ref.type,fromTools:new Set([tool.id]),found:false,content:null,tokens:0});
-      else refPool.get(ref.path).fromTools.add(tool.id)
+  const parsedCache=new Map();
+  const queue=[];
+  function enqueue(toolId,basePath,ref){
+    const resolvedPath=resolveRefPath(basePath,ref.path);
+    if(!resolvedPath)return;
+    if(!refPool.has(resolvedPath)){
+      refPool.set(resolvedPath,{path:resolvedPath,type:ref.type,fromTools:new Set([toolId]),found:false,content:null,tokens:0});
+      queue.push({toolId,path:resolvedPath});
+      return;
+    }
+    const existing=refPool.get(resolvedPath);
+    if(!existing.fromTools.has(toolId)){
+      existing.fromTools.add(toolId);
+      queue.push({toolId,path:resolvedPath});
     }
   }
+  for(const tool of foundTools){
+    const file=foundByTool[tool.id];
+    for(const ref of parseReferences(file.content))enqueue(tool.id,file.path,ref);
+  }
+  while(queue.length){
+    const current=queue.shift();
+    const entry=refPool.get(current.path);
+    if(!entry)continue;
+    if(!entry.found&&entry.content==null){
+      try{
+        const r=await fetch(rawUrl(owner,repo,usedBranch,entry.path));
+        if(r.ok){
+          entry.content=await r.text();
+          entry.found=true;
+          entry.tokens=estimateTokens(entry.content);
+        }else{
+          entry.content=null;
+          entry.found=false;
+          entry.tokens=0;
+        }
+      }catch(e){
+        entry.content=null;
+        entry.found=false;
+        entry.tokens=0;
+      }
+    }
+    if(!entry.found||!entry.content)continue;
+    if(!parsedCache.has(entry.path))parsedCache.set(entry.path,parseReferences(entry.content));
+    for(const ref of parsedCache.get(entry.path))enqueue(current.toolId,entry.path,ref);
+  }
   const uniqueRefs=Array.from(refPool.values());
-  await Promise.all(uniqueRefs.map(async ref=>{try{const r=await fetch(rawUrl(owner,repo,usedBranch,ref.path));if(r.ok){ref.content=await r.text();ref.found=true;ref.tokens=estimateTokens(ref.content)}}catch(e){}}));
 
   const agentTok=foundTools.reduce((s,t)=>s+estimateTokens(foundByTool[t.id].content),0);
-  const refTok=uniqueRefs.filter(r=>r.found).reduce((s,r)=>s+r.tokens,0);
-  return{ok:true,branch:usedBranch,foundByTool,uniqueRefs,agentTok,refTok,totalContextTokens:agentTok+refTok}
+  const refTok=calcRefTok(uniqueRefs);
+  const viewTokensByTool=calcToolViewTokens(foundByTool,uniqueRefs);
+  const allContextTokens=calcAllContextTokens(foundByTool,uniqueRefs);
+  return{ok:true,branch:usedBranch,foundByTool,uniqueRefs,agentTok,refTok,viewTokensByTool,allContextTokens,totalContextTokens:calcMaxToolViewTokens(foundByTool,uniqueRefs)}
 }
 
 // ══════════════════════════════════════
@@ -1873,6 +1968,7 @@ function setMode(mode){setArea(mode==='compare'?'compare':'analyze')}
 const COMPARE_STATE={items:[],results:[],chart:null};
 const ORG_SCAN_STATE={
   org:null,
+  ownerType:null,
   totalRepos:0,
   scannedCount:0,
   scanning:false,
@@ -1890,29 +1986,38 @@ const ORG_SCAN_STATE={
 
 // ── Org Scan Functions ──
 async function fetchOrgRepos(org){
-  const repos=[];
-  let page=1;
-  while(true){
-    let r;
-    try{
-      r=await fetch(`https://api.github.com/orgs/${org}/repos?per_page=100&page=${page}&type=public&sort=created&direction=desc`);
-    }catch(e){return{error:'network'}}
-    if(r.status===404)return{error:'notfound'};
-    if(r.status===403||r.status===429)return{error:'ratelimit'};
-    if(!r.ok)return{error:'network'};
-    const data=await r.json();
-    if(!Array.isArray(data)||!data.length)break;
-    repos.push(...data);
-    if(data.length<100)break;
-    page++;
-    await new Promise(res=>setTimeout(res,300));
+  const targets=[
+    {type:'organization',url:(page)=>`https://api.github.com/orgs/${org}/repos?per_page=100&page=${page}&type=public&sort=created&direction=desc`},
+    {type:'user',url:(page)=>`https://api.github.com/users/${org}/repos?per_page=100&page=${page}&type=owner&sort=created&direction=desc`}
+  ];
+  for(const target of targets){
+    const repos=[];
+    let page=1;
+    let notFound=false;
+    while(true){
+      let r;
+      try{
+        r=await fetch(target.url(page));
+      }catch(e){return{error:'network'}}
+      if(r.status===404){notFound=true;break}
+      if(r.status===403||r.status===429)return{error:'ratelimit'};
+      if(!r.ok)return{error:'network'};
+      const data=await r.json();
+      if(!Array.isArray(data))return{error:'network'};
+      repos.push(...data);
+      if(data.length<100)break;
+      page++;
+      await new Promise(res=>setTimeout(res,300));
+    }
+    if(!notFound)return{repos,ownerType:target.type};
   }
-  return{repos};
+  return{error:'notfound'};
 }
 function showOrgPanel(){document.getElementById('org-scan-panel').classList.remove('hidden')}
 function hideOrgPanel(){
   document.getElementById('org-scan-panel').classList.add('hidden');
   ORG_SCAN_STATE.org=null;
+  ORG_SCAN_STATE.ownerType=null;
   ORG_SCAN_STATE.scanning=false;
   ORG_SCAN_STATE.done=false;
 }
@@ -1988,10 +2093,11 @@ function renderOrgResults(){
     ${ORG_SCAN_STATE.unconfiguredVisible?`<div class="org-unconfigured-list">${uncfg.map(r=>`<span class="org-unconfigured-chip"><a href="https://github.com/${esc(r.fullName)}" target="_blank" style="color:inherit;text-decoration:none">${esc(r.name)}</a></span>`).join('')}</div>`:''}
   </div>`:'';
   const selCount=sel.size;
+  const ownerIcon=ORG_SCAN_STATE.ownerType==='user'?'👤':'🏢';
   panel.innerHTML=`<div class="org-progress-card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div>
-        <div class="org-section-title" style="font-size:1rem">🏢 ${esc(ORG_SCAN_STATE.org)}</div>
+        <div class="org-section-title" style="font-size:1rem">${ownerIcon} ${esc(ORG_SCAN_STATE.org)}</div>
         <div style="font-size:.8rem;color:var(--g400);margin-top:2px">${ORG_SCAN_STATE.totalRepos} ${T('orgPublicScanned')}</div>
       </div>
       <button onclick="hideOrgPanel()" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--g400)">✕</button>
@@ -2104,7 +2210,7 @@ const ORG_SCAN_BATCH_SIZE=10;
 const ORG_SCAN_BATCH_DELAY=600;
 async function scanOrg(org){
   Object.assign(ORG_SCAN_STATE,{
-    org,totalRepos:0,scannedCount:0,scanning:true,done:false,
+    org,ownerType:null,totalRepos:0,scannedCount:0,scanning:true,done:false,
     repos:[],configured:[],unconfigured:[],
     selected:new Set(),page:0,sortBy:'tokens',sortDir:-1,unconfiguredVisible:false,
   });
@@ -2115,6 +2221,7 @@ async function scanOrg(org){
   const result=await fetchOrgRepos(org);
   if(ORG_SCAN_STATE.org!==thisOrg)return;
   if(result.error){renderOrgError(result.error);return}
+  ORG_SCAN_STATE.ownerType=result.ownerType||'organization';
   const allRepos=result.repos;
   ORG_SCAN_STATE.totalRepos=allRepos.length;
   renderOrgProgress('scanning');
@@ -2357,6 +2464,28 @@ async function runCompare(){
   document.getElementById('cmp-results').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+function openCompareResult(index){
+  const r=COMPARE_STATE.results[index];
+  if(!r||!r.ok)return;
+  const repoLabel=r.source==='github'?r.key:(r.repoName||r.key||`${r.item&&r.item.file||'repo'}`);
+  const branchLabel=r.branch||repoLabel;
+  const foundByTool=r.foundByTool||{};
+  const uniqueRefs=(r.uniqueRefs||[]).map(normalizeRef);
+  STATE.analyzed=true;
+  STATE.foundByTool=foundByTool;
+  STATE.uniqueRefs=uniqueRefs;
+  STATE.totalContextTokens=Number(r.totalContextTokens)||calcMaxToolViewTokens(foundByTool,uniqueRefs);
+  document.getElementById('repo-url').value=r.source==='github'&&r.key?`https://github.com/${r.key}`:repoLabel;
+  clearStatus();
+  renderDetection(foundByTool,uniqueRefs,branchLabel);
+  renderDetectionExtras(repoLabel,foundByTool,STATE.totalContextTokens);
+  document.getElementById('results').classList.remove('hidden');
+  document.getElementById('empty-state').classList.add('hidden');
+  recalcCost();
+  setArea('analyze');
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 function renderCompareResults(){
   const results=COMPARE_STATE.results;
   if(!results.length)return;
@@ -2398,10 +2527,10 @@ function renderCompareResults(){
   });
 
   // Table
-  const colLabels=[T('cmpColRepo'),T('cmpColTools'),T('cmpColTokens'),T('thReq'),T('thDay'),T('thMonth'),T('thYear')];
+  const colLabels=[T('cmpColRepo'),T('cmpColTools'),T('cmpColTokens'),T('thReq'),T('thDay'),T('thMonth'),T('thYear'),T('cmpColAction')];
   const hdr=`<thead><tr>${colLabels.map((h,i)=>`<th class="${i>1?'num':''}">${h}</th>`).join('')}</tr></thead>`;
 
-  const rows=results.map(r=>{
+  const rows=results.map((r,i)=>{
     if(!r.ok){
       const errMsg=r.source==='local'
         ? T('compareMissingFile')
@@ -2409,7 +2538,7 @@ function renderCompareResults(){
       const label=r.source==='github'
         ? `<a href="https://github.com/${r.key}" target="_blank" style="color:var(--blue);font-weight:700;text-decoration:none">${r.key}</a>`
         : `<span style="font-weight:700;color:var(--g900)">${esc(r.item.file)}#${esc(r.item.repoId)}</span>`;
-      return`<tr><td>${label}</td><td colspan="6" style="color:var(--red);font-size:.82rem">⚠ ${esc(errMsg)}</td></tr>`;
+      return`<tr><td>${label}</td><td colspan="7" style="color:var(--red);font-size:.82rem">⚠ ${esc(errMsg)}</td></tr>`;
     }
     const tok=r.totalContextTokens||0;
     const pr=costFor(tok);const pd=pr*devs*chats;const pm=pd*22;const py=pm*12;
@@ -2427,6 +2556,7 @@ function renderCompareResults(){
       <td class="num">${fmt(pd)}</td>
       <td class="num">${fmt(pm)}</td>
       <td class="num">${fmt(py)}</td>
+      <td class="num"><button class="action-btn" style="padding:6px 10px;font-size:.75rem" onclick="openCompareResult(${i})">${T('cmpOpenAnalysis')}</button></td>
     </tr>`;
   }).join('');
 
@@ -2449,24 +2579,22 @@ function renderDetection(foundByTool,uniqueRefs,branch){
   const agentTok=foundTools.reduce((s,t)=>s+estimateTokens(foundByTool[t.id].content),0);
   const foundRefs=uniqueRefs.filter(r=>r.found);
   const sharedRefs=uniqueRefs.filter(r=>r.found&&r.fromTools.size>1);
-  const uniqueRefTok=foundRefs.reduce((s,r)=>s+r.tokens,0);
-  let naiveTot=agentTok;
-  for(const t of foundTools){naiveTot+=uniqueRefs.filter(r=>r.fromTools.has(t.id)&&r.found).reduce((s,r)=>s+r.tokens,0)}
-  const dedupTot=agentTok+uniqueRefTok;
-  const savings=naiveTot-dedupTot;
+  const allContextTok=calcAllContextTokens(foundByTool,uniqueRefs);
+  const maxViewTok=calcMaxToolViewTokens(foundByTool,uniqueRefs);
+  const nonSimulGap=Math.max(0,allContextTok-maxViewTok);
 
   // Stats
   document.getElementById('stats-bar').innerHTML=`
     <div class="stat-card green"><div class="stat-num">${foundTools.length}</div><div class="stat-label">${T('tools')}</div></div>
     <div class="stat-card blue"><div class="stat-num">${fmtTok(agentTok)}</div><div class="stat-label">${T('configTokens')}</div></div>
     <div class="stat-card purple"><div class="stat-num">${uniqueRefs.length}</div><div class="stat-label">${T('refs')}</div></div>
-    <div class="stat-card orange"><div class="stat-num">${fmtTok(dedupTot)}</div><div class="stat-label">${T('totalContext')}</div></div>
+    <div class="stat-card orange"><div class="stat-num">${fmtTok(maxViewTok)}</div><div class="stat-label">${T('totalContext')}</div></div>
     ${sharedRefs.length?`<div class="stat-card teal"><div class="stat-num">${sharedRefs.length}</div><div class="stat-label">${T('shared')}</div></div>`:''}
-    ${savings>0?`<div class="stat-card pink"><div class="stat-num">−${fmtTok(savings)}</div><div class="stat-label">${T('dedupSaved')}</div></div>`:''}`;
+    ${nonSimulGap>0?`<div class="stat-card pink"><div class="stat-num">−${fmtTok(nonSimulGap)}</div><div class="stat-label">${T('dedupSaved')}</div></div>`:''}`;
 
   // Savings banner
   const ban=document.getElementById('savings-banner');
-  if(savings>0){ban.classList.remove('hidden');ban.innerHTML=`<div class="s-icon">♻️</div><div class="s-body"><div class="s-title">${T('dedupTitle')}</div><div class="s-detail">${T('dedupDetail')(sharedRefs.length,fmtTok(naiveTot),fmtTok(dedupTot))}</div></div><div class="s-num">−${fmtTok(savings)} tok</div>`}else ban.classList.add('hidden');
+  if(nonSimulGap>0){ban.classList.remove('hidden');ban.innerHTML=`<div class="s-icon">♻️</div><div class="s-body"><div class="s-title">${T('dedupTitle')}</div><div class="s-detail">${T('dedupDetail')(foundTools.length,fmtTok(allContextTok),fmtTok(maxViewTok))}</div></div><div class="s-num">−${fmtTok(nonSimulGap)} tok</div>`}else ban.classList.add('hidden');
 
   // Tool grid
   document.getElementById('tools-found-pill').textContent=`${foundTools.length} / ${AGENT_TOOLS.length}`;
@@ -2530,12 +2658,22 @@ function renderResultHeader(repoName, totalTok, foundByTool){
   if(totalTok>totalWarn){badgeClass='max';badgeLabel='MAX';}
   else if(totalTok>totalIdeal){badgeClass='warn';badgeLabel='WARN';}
   el.innerHTML=`
-    <div class="rh-name">${esc(repoName||'Repository')}</div>
-    <span class="health-badge ${badgeClass}">${badgeLabel}</span>
-    <div class="rh-tokens">${fmtTok(totalTok)} tokens</div>
-    <div class="rh-actions">
-      <button class="action-btn" onclick="addCurrentAnalyzedToCompare()" title="${T('reportCompare')}">➕ ${T('reportCompare')}</button>
-      <button class="action-btn" onclick="exportCurrentAnalysis()" title="${T('exportJson')||'Export JSON'}">💾 ${T('exportJson')||'Export JSON'}</button>
+    <div class="rh-top">
+      <div class="rh-title">
+        <div class="rh-name">${esc(repoName||'Repository')}</div>
+        <span class="health-badge ${badgeClass}">${badgeLabel}</span>
+      </div>
+      <div class="rh-support">${foundCount} / ${AGENT_TOOLS.length} ${T('tools')}</div>
+    </div>
+    <div class="rh-bottom">
+      <div class="rh-kpi">
+        <div class="rh-kpi-label">${T('totalContext')}</div>
+        <div class="rh-tokens">${fmtTok(totalTok)} ${T('tokens')}</div>
+      </div>
+      <div class="rh-actions">
+        <button class="action-btn" onclick="addCurrentAnalyzedToCompare()" title="${T('reportCompare')}">➕ ${T('reportCompare')}</button>
+        <button class="action-btn" onclick="exportCurrentAnalysis()" title="${T('exportJson')||'Export JSON'}">💾 ${T('exportJson')||'Export JSON'}</button>
+      </div>
     </div>`;
   el.classList.remove('hidden');
 }
@@ -2672,7 +2810,9 @@ function exportCurrentAnalysis(){
       foundByTool:STATE.foundByTool,
       uniqueRefs:STATE.uniqueRefs.map(r=>({...r,fromTools:[...r.fromTools]})),
       agentTok:Object.values(STATE.foundByTool).reduce((s,f)=>s+estimateTokens(f.content),0),
-      refTok:STATE.uniqueRefs.filter(r=>r.found).reduce((s,r)=>s+r.tokens,0),
+      refTok:calcRefTok(STATE.uniqueRefs),
+      viewTokensByTool:calcToolViewTokens(STATE.foundByTool,STATE.uniqueRefs),
+      allContextTokens:calcAllContextTokens(STATE.foundByTool,STATE.uniqueRefs),
       totalContextTokens:STATE.totalContextTokens,
     }],
   };
@@ -2712,8 +2852,6 @@ function renderHealth(foundByTool, uniqueRefs) {
   const foundTools = AGENT_TOOLS.filter(t => foundToolIds.includes(t.id));
   if (!foundTools.length) { el.innerHTML = ''; return; }
 
-  const totalRef = uniqueRefs.filter(r=>r.found).reduce((s,r)=>s+r.tokens, 0);
-
   // Per-file health bars
   const bars = foundTools.map(tool => {
     const { path, content } = foundByTool[tool.id];
@@ -2752,7 +2890,7 @@ function renderHealth(foundByTool, uniqueRefs) {
   }).join('');
 
   // Total context health (config + refs)
-  const totalTok = foundTools.reduce((s,t) => s + estimateTokens(foundByTool[t.id].content), 0) + totalRef;
+  const totalTok = calcMaxToolViewTokens(foundByTool, uniqueRefs);
   const totalIdeal = 8000;
   const totalWarn = 20000;
   const totalMax = 50000;

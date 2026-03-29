@@ -1,6 +1,6 @@
 {
   "name": "@hugofusinato/agentlens",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Scan local and public repos for AI agent context cost — detect CLAUDE.md, AGENTS.md, .cursorrules and calculate token costs across all major LLM providers",
   "main": "agentlens-core.js",
   "bin": {

@@ -97,6 +97,123 @@
     if (!map.has(p)) map.set(p, { path: p, type });
   }
 
+  function normalizeRefPath(p) {
+    return String(p || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+  }
+
+  function resolveRefPath(basePath, refPath) {
+    const raw = normalizeRefPath(refPath);
+    if (!raw) return '';
+    if (!raw.startsWith('.')) return raw;
+    const baseParts = normalizeRefPath(basePath).split('/').filter(Boolean);
+    if (baseParts.length) baseParts.pop();
+    for (const part of raw.split('/')) {
+      if (!part || part === '.') continue;
+      if (part === '..') {
+        if (baseParts.length) baseParts.pop();
+        continue;
+      }
+      baseParts.push(part);
+    }
+    return baseParts.join('/');
+  }
+
+  function isLikelyInlineRef(p) {
+    if (!p || p.length >= 120 || /\s/.test(p) || p.startsWith('http')) return false;
+    if (p.includes('/')) return true;
+    return /\.(md|mdx|txt|json|ya?ml|toml|ini|cfg|conf|xml|html|css|js|cjs|mjs|ts|tsx|jsx|py|rb|go|rs|java|c|cpp|h|hpp|sh)$/i.test(p);
+  }
+
+  function shouldParseNestedRefs(p) {
+    return /\.(md|mdx|txt|json|ya?ml|toml|ini|cfg|conf)$/i.test(normalizeRefPath(p));
+  }
+
+  function calcToolViewTokens(foundByTool, uniqueRefs) {
+    const totals = {};
+    for (const [toolId, file] of Object.entries(foundByTool || {})) {
+      let total = estimateTokens(file.content || '');
+      for (const ref of uniqueRefs || []) {
+        if (ref.found && ref.fromTools && ref.fromTools.includes(toolId)) total += ref.tokens || 0;
+      }
+      totals[toolId] = total;
+    }
+    return totals;
+  }
+
+  function calcMaxToolViewTokens(foundByTool, uniqueRefs) {
+    const totals = Object.values(calcToolViewTokens(foundByTool, uniqueRefs));
+    return totals.length ? Math.max(...totals) : 0;
+  }
+
+  function calcAllContextTokens(foundByTool, uniqueRefs) {
+    const seen = new Set();
+    let total = 0;
+    for (const file of Object.values(foundByTool || {})) {
+      const path = normalizeRefPath(file && file.path);
+      if (!path || seen.has(path)) continue;
+      seen.add(path);
+      total += estimateTokens(file.content || '');
+    }
+    for (const ref of uniqueRefs || []) {
+      const path = normalizeRefPath(ref && ref.path);
+      if (!ref.found || !path || seen.has(path)) continue;
+      seen.add(path);
+      total += ref.tokens || 0;
+    }
+    return total;
+  }
+
+  function calcRefTok(uniqueRefs) {
+    return (uniqueRefs || []).filter(r => r.found).reduce((s, r) => s + r.tokens, 0);
+  }
+
+  function buildRefGraph(foundByTool, loadRef) {
+    const refPool = new Map();
+    const parsedCache = new Map();
+    const queue = [];
+
+    function enqueue(toolId, basePath, ref) {
+      const resolvedPath = resolveRefPath(basePath, ref.path);
+      if (!resolvedPath) return;
+      if (!refPool.has(resolvedPath)) {
+        refPool.set(resolvedPath, { path: resolvedPath, type: ref.type, fromTools: [toolId], found: false, content: null, tokens: 0 });
+        queue.push({ toolId, path: resolvedPath });
+        return;
+      }
+      const existing = refPool.get(resolvedPath);
+      if (!existing.fromTools.includes(toolId)) {
+        existing.fromTools.push(toolId);
+        queue.push({ toolId, path: resolvedPath });
+      }
+    }
+
+    for (const [toolId, file] of Object.entries(foundByTool || {})) {
+      for (const ref of parseReferences(file.content || '')) enqueue(toolId, file.path, ref);
+    }
+
+    while (queue.length) {
+      const current = queue.shift();
+      const entry = refPool.get(current.path);
+      if (!entry) continue;
+      if (!entry.found && entry.content == null) {
+        const loaded = loadRef(current.path);
+        if (loaded && loaded.found) {
+          entry.found = true;
+          entry.content = loaded.content;
+          entry.tokens = estimateTokens(loaded.content);
+        } else {
+          entry.found = false;
+          entry.content = null;
+          entry.tokens = 0;
+        }
+      }
+      if (!entry.found || !entry.content || !shouldParseNestedRefs(entry.path)) continue;
+      if (!parsedCache.has(entry.path)) parsedCache.set(entry.path, parseReferences(entry.content));
+      for (const ref of parsedCache.get(entry.path)) enqueue(current.toolId, entry.path, ref);
+    }
+    return Array.from(refPool.values());
+  }
+
   function parseReferences(content) {
     const found = new Map();
     for (const line of content.split('\n')) {
@@ -117,7 +234,7 @@
       const cr = /`([^`]+\.[a-zA-Z0-9]+)`/g; let cm;
       while ((cm = cr.exec(line)) !== null) {
         const p = cm[1];
-        if (!p.startsWith('http') && p.includes('/') && p.split('/').length >= 2 && p.length < 120) addR(found, p, 'inline-code');
+        if (isLikelyInlineRef(p)) addR(found, p, 'inline-code');
       }
     }
     return Array.from(found.values());
@@ -176,39 +293,17 @@
     }
 
     // Build ref pool with deduplication
-    const refPool = new Map();
-    for (const tool of foundTools) {
-      const configFilePath = abs(foundByTool[tool.id].path);
-      const configDir = path.dirname(configFilePath);
-      const refs = parseReferences(foundByTool[tool.id].content);
-
-      for (const ref of refs) {
-        // Resolve relative to the config file's directory
-        const resolved = path.resolve(configDir, ref.path);
-        const relPath = norm(path.relative(repoPath, resolved));
-
-        if (!refPool.has(relPath)) {
-          refPool.set(relPath, { path: relPath, type: ref.type, fromTools: [tool.id], found: false, content: null, tokens: 0, absolutePath: norm(resolved) });
-        } else {
-          const existing = refPool.get(relPath);
-          if (!existing.fromTools.includes(tool.id)) existing.fromTools.push(tool.id);
-        }
-      }
-    }
-
-    // Resolve each ref from filesystem
-    const uniqueRefs = Array.from(refPool.values());
-    for (const ref of uniqueRefs) {
-      const content = readFileCapped(ref.absolutePath);
-      if (content !== null) {
-        ref.content = content;
-        ref.found = true;
-        ref.tokens = estimateTokens(content);
-      }
-    }
+    const uniqueRefs = buildRefGraph(foundByTool, refPath => {
+      const resolved = path.resolve(repoPath, refPath);
+      const content = readFileCapped(resolved);
+      if (content === null) return { found: false, content: null };
+      return { found: true, content };
+    });
 
     const agentTok = foundTools.reduce((s, t) => s + estimateTokens(foundByTool[t.id].content), 0);
-    const refTok   = uniqueRefs.filter(r => r.found).reduce((s, r) => s + r.tokens, 0);
+    const refTok   = calcRefTok(uniqueRefs);
+    const viewTokensByTool = calcToolViewTokens(foundByTool, uniqueRefs);
+    const allContextTokens = calcAllContextTokens(foundByTool, uniqueRefs);
 
     return {
       ok: true,
@@ -218,7 +313,9 @@
       uniqueRefs,
       agentTok,
       refTok,
-      totalContextTokens: agentTok + refTok,
+      viewTokensByTool,
+      allContextTokens,
+      totalContextTokens: calcMaxToolViewTokens(foundByTool, uniqueRefs),
       noFiles: false,
     };
   }
