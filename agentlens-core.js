@@ -118,12 +118,6 @@
     return baseParts.join('/');
   }
 
-  function isLikelyInlineRef(p) {
-    if (!p || p.length >= 120 || /\s/.test(p) || p.startsWith('http')) return false;
-    if (p.includes('/')) return true;
-    return /\.(md|mdx|txt|json|ya?ml|toml|ini|cfg|conf|xml|html|css|js|cjs|mjs|ts|tsx|jsx|py|rb|go|rs|java|c|cpp|h|hpp|sh)$/i.test(p);
-  }
-
   function shouldParseNestedRefs(p) {
     return /\.(md|mdx|txt|json|ya?ml|toml|ini|cfg|conf)$/i.test(normalizeRefPath(p));
   }
@@ -222,7 +216,7 @@
       if (m) { addR(found, m[1], 'import'); continue; }
       m = t.match(/^[!]?include[:\s]+["']?([^\s"']+\.[a-zA-Z0-9]+)["']?/i);
       if (m) { addR(found, m[1], 'include'); continue; }
-      m = t.match(/^@(?:file\s+)?([^\s@#]+\.[a-zA-Z0-9]+)/);
+      m = t.match(/^@(?:file\s+)?([^\s@#(:{]+\.[a-zA-Z0-9]+)/);
       if (m && !m[1].startsWith('http')) { addR(found, m[1], 'ref'); continue; }
       const lr = /\[([^\]]*)\]\(([^)]+)\)/g; let lm;
       while ((lm = lr.exec(line)) !== null) {
@@ -231,13 +225,31 @@
       }
       m = t.match(/^context[_-]?files?:\s*\[([^\]]+)\]/i);
       if (m) { m[1].split(',').forEach(f => { const p = f.trim().replace(/["']/g, ''); if (p) addR(found, p, 'context'); }); continue; }
-      const cr = /`([^`]+\.[a-zA-Z0-9]+)`/g; let cm;
-      while ((cm = cr.exec(line)) !== null) {
-        const p = cm[1];
-        if (isLikelyInlineRef(p)) addR(found, p, 'inline-code');
-      }
     }
     return Array.from(found.values());
+  }
+
+  function gitPatternToRegex(pattern, anchored) {
+    let r = '';
+    for (let i = 0; i < pattern.length; i++) {
+      const c = pattern[i];
+      if (c === '*' && pattern[i + 1] === '*') {
+        r += '.*';
+        i++;
+        if (pattern[i + 1] === '/') i++;
+      } else if (c === '*') {
+        r += '[^/]*';
+      } else if (c === '?') {
+        r += '[^/]';
+      } else if (/[.+^${}()|[\]\\]/.test(c)) {
+        r += '\\' + c;
+      } else {
+        r += c;
+      }
+    }
+    return anchored
+      ? new RegExp('^' + r + '(/.*)?$')
+      : new RegExp('(^|/)' + r + '(/.*)?$');
   }
 
   // ══════════════════════════════════════
@@ -246,13 +258,37 @@
   // Returns fromTools as Array (JSON-serializable)
   // ══════════════════════════════════════
   function analyzeLocalRepo(repoPath, repoName) {
-    // Lazy Node.js imports — safe in browser because this function is never called there
     const fs   = require('fs');
     const path = require('path');
 
-    const MAX_FILE_BYTES = 512 * 1024; // 512 KB cap per file
+    const MAX_FILE_BYTES = 512 * 1024;
     const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'vendor', '__pycache__', '.cache']);
     const abs = p => path.resolve(repoPath, p);
+
+    const gitignorePatterns = [];
+    try {
+      const giContent = fs.readFileSync(abs('.gitignore'), 'utf8');
+      for (const line of giContent.split('\n')) {
+        let p = line.trim();
+        if (!p || p.startsWith('#')) continue;
+        const negate = p.startsWith('!');
+        if (negate) p = p.slice(1);
+        const anchored = p.startsWith('/');
+        if (anchored) p = p.slice(1);
+        if (p.endsWith('/')) p = p.slice(0, -1);
+        if (!p) continue;
+        gitignorePatterns.push({ negate, anchored, pattern: p });
+      }
+    } catch (e) {}
+
+    function isGitignored(relPath) {
+      if (!gitignorePatterns.length) return false;
+      let ignored = false;
+      for (const { negate, anchored, pattern } of gitignorePatterns) {
+        if (gitPatternToRegex(pattern, anchored).test(relPath)) ignored = !negate;
+      }
+      return ignored;
+    }
 
     // Normalize path to forward slashes (cross-platform)
     const norm = p => p.replace(/\\/g, '/');
@@ -292,8 +328,8 @@
       return { ok: true, repoName, localPath: norm(repoPath), foundByTool: {}, uniqueRefs: [], agentTok: 0, refTok: 0, totalContextTokens: 0, noFiles: true };
     }
 
-    // Build ref pool with deduplication
     const uniqueRefs = buildRefGraph(foundByTool, refPath => {
+      if (isGitignored(norm(refPath))) return { found: false, content: null };
       const resolved = path.resolve(repoPath, refPath);
       const content = readFileCapped(resolved);
       if (content === null) return { found: false, content: null };

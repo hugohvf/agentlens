@@ -182,6 +182,18 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--g90
 .refs-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
 .ref-card{background:var(--card);border:1px solid var(--card-border);border-radius:10px;overflow:hidden;border-left:3px solid var(--blue)}
 .ref-card.not-found{border-left-color:var(--g400);opacity:.55}
+.ref-card.heavy{border-left-color:var(--orange);border-color:rgba(245,158,11,.3)}
+.ref-tag.heavy{background:var(--orange-l);color:var(--orange)}
+.heavy-warn-panel{border-top:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.05);padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.heavy-warn-intro{font-size:.82rem;color:var(--orange);font-weight:600;display:flex;align-items:flex-start;gap:7px}
+.heavy-warn-intro span{line-height:1.5}
+.heavy-fixes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:900px){.heavy-fixes{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.heavy-fixes{grid-template-columns:1fr}}
+.heavy-fix{background:var(--card);border:1px solid var(--card-border);border-radius:8px;padding:11px 13px;display:flex;flex-direction:column;gap:5px}
+.heavy-fix-title{font-size:.78rem;font-weight:700;color:var(--g900)}
+.heavy-fix-desc{font-size:.75rem;color:var(--g500);line-height:1.45}
+.heavy-fix-code{font-family:monospace;font-size:.72rem;background:var(--g50);border:1px solid var(--g200);border-radius:5px;padding:7px 9px;white-space:pre;overflow-x:auto;color:var(--g700);margin-top:2px;line-height:1.5}
 .ref-card-header{padding:11px 16px;background:var(--card-alt);border-bottom:1px solid var(--card-border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;cursor:pointer;user-select:none;transition:.15s}
 .ref-card-header:hover{background:rgba(37,71,244,.1)}
 .ref-path{font-family:monospace;font-size:.84rem;font-weight:700;color:var(--g900)}
@@ -1075,6 +1087,15 @@ const I18N = {
     historicalSnapshots: '🕑 Historical Snapshots',
     orgAreaLabel: 'GitHub Organization or User URL',
     orgAreaBtn: 'Scan',
+    heavyRefBadge: 'heavy',
+    heavyRefIntro: (tok, pct) => `⚠ This file alone contributes ~${tok} tokens — ${pct}× the recommended budget for an entire agent config. It is loaded in full on every request.`,
+    heavyFixRemoveTitle: 'Remove the reference',
+    heavyFixRemoveDesc: 'Delete the @import, markdown link, or backtick path that points to this file. You can still describe what the file does in plain text — the agent only loads it if there is a parseable path reference.',
+    heavyFixClaudeTitle: '🔮 Claude Code — path-scoped rule',
+    heavyFixClaudeDesc: 'Move the reference into a rule file with a paths: field. The rule only loads when Claude works with files in those paths — zero cost otherwise.',
+    heavyFixClaudeCode: `# .claude/rules/my-context.md\n---\npaths:\n  - "src/components/**"\n---\nInstructions that reference the heavy file`,
+    heavyFixSummaryTitle: 'Replace with a short summary file',
+    heavyFixSummaryDesc: 'Create a focused summary (< 2 k tokens) that captures only what the agent needs to know. Reference that file instead of the full one.',
   },
   pt: {
     heroSub: 'Cole a URL de qualquer repositório GitHub para detectar configs de agentes IA, resolver cada arquivo referenciado e calcular o custo real do contexto carregado por requisição.',
@@ -1263,6 +1284,15 @@ const I18N = {
     historicalSnapshots: '🕑 Histórico de Snapshots',
     orgAreaLabel: 'URL de Organização ou Usuário GitHub',
     orgAreaBtn: 'Escanear',
+    heavyRefBadge: 'pesado',
+    heavyRefIntro: (tok, pct) => `⚠ Este arquivo sozinho contribui com ~${tok} tokens — ${pct}× o orçamento recomendado para um config de agente inteiro. Ele é carregado por completo em cada requisição.`,
+    heavyFixRemoveTitle: 'Remover a referência',
+    heavyFixRemoveDesc: 'Delete o @import, link markdown ou caminho em backtick que aponta para este arquivo. Você ainda pode descrever o que o arquivo faz em texto simples — o agente só carrega se houver uma referência de caminho parseável.',
+    heavyFixClaudeTitle: '🔮 Claude Code — regra com escopo de paths',
+    heavyFixClaudeDesc: 'Mova a referência para um arquivo de regra com campo paths:. A regra só carrega quando Claude trabalha com arquivos nesses caminhos — custo zero caso contrário.',
+    heavyFixClaudeCode: `# .claude/rules/meu-contexto.md\n---\npaths:\n  - "src/components/**"\n---\nInstruções que referenciam o arquivo pesado`,
+    heavyFixSummaryTitle: 'Substituir por um arquivo de resumo curto',
+    heavyFixSummaryDesc: 'Crie um resumo focado (< 2 k tokens) com só o que o agente precisa saber. Referencie esse arquivo ao invés do original.',
   }
 };
 let LANG = 'pt';
@@ -2570,6 +2600,23 @@ function showCmpStatus(m,t='loading'){
 }
 function clearCmpStatus(){document.getElementById('cmp-status-area').innerHTML=''}
 
+const HEAVY_REF_THRESHOLD = 10000;
+
+function renderHeavyWarnPanel(ref) {
+  const pct = Math.round(ref.tokens / 2000);
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fix = (title, desc, code) =>
+    `<div class="heavy-fix"><div class="heavy-fix-title">${title}</div><div class="heavy-fix-desc">${desc}</div>${code ? `<pre class="heavy-fix-code">${esc(code)}</pre>` : ''}</div>`;
+  return `<div class="heavy-warn-panel">
+    <div class="heavy-warn-intro"><span>${T('heavyRefIntro')(fmtTok(ref.tokens), pct)}</span></div>
+    <div class="heavy-fixes">
+      ${fix(T('heavyFixRemoveTitle'), T('heavyFixRemoveDesc'), null)}
+      ${fix(T('heavyFixClaudeTitle'), T('heavyFixClaudeDesc'), T('heavyFixClaudeCode'))}
+      ${fix(T('heavyFixSummaryTitle'), T('heavyFixSummaryDesc'), null)}
+    </div>
+  </div>`;
+}
+
 // ══════════════════════════════════════
 // RENDER DETECTION
 // ══════════════════════════════════════
@@ -2628,7 +2675,8 @@ function renderDetection(foundByTool,uniqueRefs,branch){
   document.getElementById('refs-grid').innerHTML=uniqueRefs.map((ref,ri)=>{const isShared=ref.fromTools.size>1;const rfid=`rc-${ri}`;
     if(ref.found&&ref.content)FILE_CONTENTS[rfid]=ref.content;
     const hasKey=hasApiKey();
-    const tags=[ref.found?`<span class="ref-tag found">✓</span>`:`<span class="ref-tag missing">✗</span>`,`<span class="ref-tag type">${ref.type}</span>`,isShared?`<span class="ref-tag shared">${T('shared')} ×${ref.fromTools.size}</span>`:'',ref.found?`<span class="token-badge">~${fmtTok(ref.tokens)} tok</span>`:'',...[...ref.fromTools].map(tid=>{const tt=AGENT_TOOLS.find(x=>x.id===tid);return tt?`<span class="t-tool" ${toolPill(tid)}>${tt.icon}</span>`:''})].join('');
+    const isHeavy=ref.found&&ref.tokens>=HEAVY_REF_THRESHOLD;
+    const tags=[ref.found?`<span class="ref-tag found">✓</span>`:`<span class="ref-tag missing">✗</span>`,`<span class="ref-tag type">${ref.type}</span>`,isShared?`<span class="ref-tag shared">${T('shared')} ×${ref.fromTools.size}</span>`:'',isHeavy?`<span class="ref-tag heavy">${T('heavyRefBadge')}</span>`:'',ref.found?`<span class="token-badge">~${fmtTok(ref.tokens)} tok</span>`:'',...[...ref.fromTools].map(tid=>{const tt=AGENT_TOOLS.find(x=>x.id===tid);return tt?`<span class="t-tool" ${toolPill(tid)}>${tt.icon}</span>`:''})].join('');
     const cnt=ref.found?(/\.(md|mdx)$/.test(ref.path)?`<div class="md-body">${renderMd(ref.content)}</div>`:`<div class="raw-code">${ref.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`):`<p style="color:var(--red);font-style:italic;padding:6px 0">${T('missing')} (${branch})</p>`;
     const refIcon=/\.md$/.test(ref.path)?'📄':/\.json$/.test(ref.path)?'📋':/\.(ts|js|py|go|rs|rb)$/.test(ref.path)?'🟨':'📁';
     const refIsMd=/\.(md|mdx)$/.test(ref.path);
@@ -2636,7 +2684,8 @@ function renderDetection(foundByTool,uniqueRefs,branch){
     const fsBtn=ref.found?`<button class="icon-btn" onclick="event.stopPropagation();openFullscreen('${rfid}','${refIcon}','${ref.path}',${refIsMd})" title="${T('fsExpand')}">⛶</button>`:'';
     const tBtn=hasKey&&ref.found?`<button class="icon-btn" onclick="event.stopPropagation();toggleTranslatePanel('${rfid}')" title="${T('translateBtn')}">🌐</button>`:'';
     const tPanel=hasKey&&ref.found?`<div class="translate-panel" id="tp-${rfid}"><div class="translate-controls"><select id="td-${rfid}"><option value="en">PT → EN</option><option value="pt">EN → PT</option></select><button class="t-run-btn" onclick="runTranslate('${rfid}')">${T('translateBtn')}</button><button class="t-close-btn" onclick="toggleTranslatePanel('${rfid}')">✕</button></div><div class="translate-result" id="tr-${rfid}"></div><div class="translate-status" id="ts-${rfid}"></div></div>`:'';
-    return`<div class="ref-card ${!ref.found?'not-found':''}" id="${rfid}"><div class="ref-card-header" onclick="toggleRef(this)"><span class="ref-path">${ref.path}</span><div class="ref-meta">${tags}${copyBtn}${fsBtn}${tBtn}<span style="color:var(--g400)">▾</span></div></div>${tPanel}<div class="ref-content">${cnt}</div></div>`}).join('');
+    const heavyPanel=isHeavy?renderHeavyWarnPanel(ref):'';
+    return`<div class="ref-card ${!ref.found?'not-found':''} ${isHeavy?'heavy':''}" id="${rfid}"><div class="ref-card-header" onclick="toggleRef(this)"><span class="ref-path">${ref.path}</span><div class="ref-meta">${tags}${copyBtn}${fsBtn}${tBtn}<span style="color:var(--g400)">▾</span></div></div>${tPanel}${heavyPanel}<div class="ref-content">${cnt}</div></div>`}).join('');
 
   // Render Context Health
   renderHealth(foundByTool, uniqueRefs);
